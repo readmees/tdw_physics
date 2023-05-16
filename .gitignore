@@ -3,3 +3,4 @@ tdw_physics/__pycache__/*
 tdw_physics/trial_writers/__pycache__/*
 tdw_physics.egg-info/*
 data/*
+controllers/TDW.app

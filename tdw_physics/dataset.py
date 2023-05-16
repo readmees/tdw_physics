@@ -25,7 +25,7 @@ class Dataset(Controller, ABC):
     OBJECT_IDS: np.array = np.empty(dtype=int, shape=0)
 
     def __init__(self, port: int = 1071):
-        super().__init__(port=port, launch_build=False)
+        super().__init__(port=port, launch_build=True)
 
     def run(self, num: int, output_dir: str, temp_path: str, width: int, height: int) -> None:
         """
