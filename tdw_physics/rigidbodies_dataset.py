@@ -175,7 +175,7 @@ class RigidbodiesDataset(TransformsDataset, ABC):
         frame, objs, tr, done = super()._write_frame(frames_grp=frames_grp, resp=resp, frame_num=frame_num)
         num_objects = len(Dataset.OBJECT_IDS)
         # Physics data.
-        velocities = np.empty(dtype=np.float32, shape=(num_objects, 3))
+        velocities = np.zeros(dtype=np.float32, shape=(num_objects, 3))
         angular_velocities = np.empty(dtype=np.float32, shape=(num_objects, 3))
         # Collision data.
         collision_ids = np.empty(dtype=np.int32, shape=(0, 2))
