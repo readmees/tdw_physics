@@ -14,20 +14,37 @@ from os import chdir, system
 from subprocess import call
 import shutil
 
+# Added for collisions
+import random
 
 
 
 class Collision(Controller):
     def collision_fall(self, commands, o_id1, o_id2):
+        '''This method implements objects falling on top of each other, 
+        by placing one above the other'''
         commands.extend(self.get_add_physics_object(model_name="iron_box",
                                                     object_id=o_id1,
                                                     position={"x": 0, "y": 3, "z": 0}))
         commands.extend(self.get_add_physics_object(model_name="rh10",
                                                 object_id=o_id2,
                                                 position={"x": 0, "y": 0, "z": 0}))
-        commands.extend([{"$type": "object_look_at_position",
-                            "position": {"x": 0, "y": 0.5, "z": 0},
-                            "id": o_id1}])
+        
+    def collision_force(self, commands, o_id1, o_id2):
+        '''This method implements objects bumping into each other, 
+        by placing next to the other, then applying a force towards the other one'''
+        commands.extend(self.get_add_physics_object(model_name="iron_box",
+                                                    object_id=o_id1,
+                                                    position={"x": 0, "y": 0, "z": 1}))
+        commands.extend(self.get_add_physics_object(model_name="rh10",
+                                                object_id=o_id2,
+                                                position={"x": 1, "y": 0, "z": 1}))
+        commands.extend([{"$type": "object_look_at",
+                          "other_object_id": o_id1,
+                          "id": o_id2},
+                         {"$type": "apply_force_magnitude_to_object",
+                          "magnitude": random.uniform(20, 60),
+                          "id": o_id2}])
     def trial(self, path):
         '''
         param path: "Images will be save to here"'''
@@ -56,7 +73,7 @@ class Collision(Controller):
         o_id1 = self.get_unique_id()
         o_id2 = self.get_unique_id()
 
-        self.collision_fall(commands, o_id1, o_id2)
+        self.collision_force(commands, o_id1, o_id2)
 
         self.communicate(commands)
         for i in range(400):
