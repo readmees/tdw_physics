@@ -4,7 +4,7 @@ from tdw.add_ons.third_person_camera import ThirdPersonCamera
 from typing import Dict
 from tdw.controller import Controller
 from tdw.add_ons.third_person_camera import ThirdPersonCamera
-from tdw.add_ons.collision_manager import CollisionManager
+from tdw.add_ons.occlusion_manager import occlusionManager
 from tdw.add_ons.object_manager import ObjectManager
 
 # Added for video
@@ -14,7 +14,7 @@ from os import chdir, system
 from subprocess import call
 import shutil
 
-# Added for collisions
+# Added for occlusions
 import random
 
 
@@ -41,7 +41,7 @@ class Occlusion(Controller):
         self.o_occl_loc_z = random.uniform(-.1, .1)
 
         print(self.o_moving_loc)
-        super().__init__(port=1071)
+        super().__init__(port=1072)
 
     def get_random_records(self):
         '''This method gets two objects, where 
@@ -110,20 +110,21 @@ class Occlusion(Controller):
         # Add camera
         camera = ThirdPersonCamera(position={"x": 2.5, "y": .5, "z": 0},
                            look_at={"x": 0, "y": 0, "z": 0},
-                           avatar_id="collision")
+                           avatar_id="occlusion")
         self.add_ons.append(camera)
  
         # Remove previous images and videos
         try:
-            shutil.rmtree(f'{path}collision/')
+            shutil.rmtree(f'{path}occlusion/')
         except FileNotFoundError:
              pass
         
         # Save output images/frames for video
-        self.add_ons.append(ImageCapture(path=path, avatar_ids=["collision"]))
+        self.add_ons.append(ImageCapture(path=path, avatar_ids=["occlusion"]))
         
         # Create room and set target framerate
-        commands = [TDWUtils.create_empty_room(12, 12),
+        commands = [
+            # TDWUtils.create_empty_room(12, 12), #TODO uncomment
                     {"$type": "set_target_framerate",
                 "framerate": 30}]
         o_id1 = self.get_unique_id()
@@ -132,27 +133,10 @@ class Occlusion(Controller):
         self.add_occ_objects(commands, o_id1, o_id2)
 
         self.communicate(commands)
-
-        # Define standard speed and direction
-        speed = random.uniform(0.05, 0.1) if self.direction == 'left' else -random.uniform(0.05, 0.1)
-
-        # Check if transition is done
-        transition_compl = False
-        print('1', speed)                
+        
 
         for i in range(200):
-            self.o_moving_loc['z'] += speed
-            self.communicate([{"$type": "teleport_object", "position": self.o_moving_loc, "id": o_id1}])
-
-            # Check if this is object based or transition trial
-            if self.transition:
-                # Start transition when it's behind the object #TODO: could be cooler
-                if self.o_moving_loc['z'] > self.o_occl_loc_z and speed > 0 or self.o_moving_loc['z'] < self.o_occl_loc_z and speed < 0:
-                    if not transition_compl:
-                        # Choose between reverse random speed change, stop, random speed change
-                        speed = random.choice([-random.uniform(0.01, 0.2), 0, random.uniform(0.01, 0.2), -speed]) 
-                        print('2', speed)                
-                        transition_compl = True
+            self.communicate([])
 
         self.communicate({"$type": "terminate"})
 
@@ -167,7 +151,7 @@ if __name__ == "__main__":
 
     # Call ffmpeg to make video
     call(["ffmpeg",
-        "-i", f"{path}collision/"+"img_%04d.jpg",
+        "-i", f"{path}occlusion/"+"img_%04d.jpg",
         "-vcodec", "libx264",
         "-pix_fmt", "yuv420p",
         f"{path}occlusion_mees_empty_room/"+f"{random.uniform(0.01, 0.2)}.mp4"])
