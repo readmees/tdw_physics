@@ -1,2 +1,3 @@
-# tdw_physics
-Implements automated generation of physic videos in TDW
+# TDW Trials
+Implements automated generation of object, agent and transition based videos in TDW
+Note: internet connection needed
