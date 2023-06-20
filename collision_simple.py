@@ -20,6 +20,7 @@ import random
 
 
 class Collision(Controller):
+    
     def collision_fall(self, commands, o_id1, o_id2):
         '''This method implements objects falling on top of each other, 
         by placing one above the other'''
@@ -29,7 +30,7 @@ class Collision(Controller):
         commands.extend(self.get_add_physics_object(model_name="rh10",
                                                 object_id=o_id2,
                                                 position={"x": 0, "y": 0, "z": 0}))
-        
+        return commands
     def collision_force(self, commands, o_id1, o_id2):
         '''This method implements objects bumping into each other, 
         by placing next to the other, then applying a force towards the other one'''
@@ -45,6 +46,7 @@ class Collision(Controller):
                          {"$type": "apply_force_magnitude_to_object",
                           "magnitude": random.uniform(20, 60),
                           "id": o_id2}])
+        return commands
     def trial(self, path):
         '''
         param path: "Images will be save to here"'''
@@ -73,7 +75,7 @@ class Collision(Controller):
         o_id1 = self.get_unique_id()
         o_id2 = self.get_unique_id()
 
-        self.collision_force(commands, o_id1, o_id2)
+        commands = self.collision_force(commands, o_id1, o_id2)
 
         self.communicate(commands)
         for i in range(400):
