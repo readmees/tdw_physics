@@ -16,8 +16,8 @@ import shutil
 
 # Added for collisions
 import random
-
 import os
+from helpers import images_to_video, message
 
 class Collision(Controller):
     
@@ -48,10 +48,23 @@ class Collision(Controller):
                           "id": o_id2}])
         return commands
     
-    def trial(self, png=False):
+    def trial(self, num=5, png=False, pass_masks=["_img", "_mask"]):
         '''
-        param png: If True, images will be lossless png files.
+        param png: If True, images will be lossless png files. Usually jpg should be enough, but only works for _img
+        parm pass_masks: segmentation data and much more, see: https://github.com/threedworld-mit/tdw/blob/master/Documentation/api/command_api.md#set_pass_masks
         '''
+        # Check if input Camera params are valid
+        if not isinstance(pass_masks, list):
+            return message("pass_masks should be list", 'error')
+        if not png and pass_masks != ["_img"]:
+            print(message("jpg only implemented for image mask", 'warning'))
+        masks_options = ['_albedo', '_flow', '_normals', '_depth_simple', '_depth', '_mask', '_category', '_id', '_img']
+        for mask_type in pass_masks:
+            if mask_type not in masks_options:
+                return message(f'{mask_type} not in {masks_options}', 'error')
+        if len(set(pass_masks)) != len(pass_masks):
+            return message('pass_mask cannot contain any double masks', 'error')
+        
         # Clear the list of add-ons.
         self.add_ons.clear()
 
@@ -82,20 +95,22 @@ class Collision(Controller):
              pass
         
         # Save 'normal' output images/frames_temp for video
-        # ["_img", "_id", "_category", "_mask"]
-        self.add_ons.append(ImageCapture(path=path_main+'/frames_temp/', avatar_ids=[main_cam], png=True, pass_masks=["_img"]))
+        self.add_ons.append(ImageCapture(path=path_main+'/frames_temp/', avatar_ids=[main_cam], png=png, pass_masks=pass_masks))
         
         # Create room and set target framerate
+        framerate = 30
         commands = [TDWUtils.create_empty_room(12, 12),
                     {"$type": "set_target_framerate",
-                    "framerate": 30}]
+                    "framerate": framerate}]
         self.communicate(commands)
 
-
         # Save scene/background separately
-        shutil.move(f'{path_frames}/img_0000.png', f'{path_backgr}/background_{main_cam}{trial_id}.png') 
+        ext = '.png' if png else '.jpg'
+        shutil.move(f'{path_frames}/img_0000{ext}', f'{path_backgr}/background_{main_cam}{trial_id}{ext}') 
         
-        for i in range(5):
+        print(f"Video of trial n will be saved at {path_videos}/{trial_id}_trial_n.mp4")
+
+        for trial_num in range(num):
             o_ids = [self.get_unique_id() for _ in range(2)]
             commands = [{"$type": "send_rigidbodies",
                                       "frequency": "always"}]
@@ -112,33 +127,27 @@ class Collision(Controller):
                                 "id": o_id},
                                 {"$type": "send_rigidbodies",
                                 "frequency": "never"}])
-                print(f'Object {o_id} deleted')
             
             # Call ffmpeg to make video from frames in frames_temp
-            '''NOTE: the %d wildcard in ffmpeg is not safe for extremely large numbers (with 32-bit max 2,147,483,647)
-            Furthermore, large numbers like this might lead to potential performance issues or file system limitations.
-            The frame number will increase across trials, so 10000 trials of 1000 frames is, will lead to 
-            {trial_id}_trial_10000000.mp4. Numbers under 10**9 should be safe,
-            this is all according to ChatGPT 20 Jun 2023'''
-            
-            call(["ffmpeg",
-                "-i", f'{path_frames}/'+"*.png",
-                "-vcodec", "libx264",
-                "-pix_fmt", "yuv420p",
-                f"{path_videos}/{trial_id}_trial_{i}.mp4"])
-            import time
-            time.sleep(1)
-            # Remove frames for next trial
+            # Provide the path to the folder containing the images
+
+            # Specify the output video file name
+            output_video = f"{path_videos}/{trial_id}_trial_{trial_num}"
+
+            # Convert images to video
+            images_to_video(path_frames, output_video, framerate, pass_masks, png)
             shutil.rmtree(path_frames)
+
+            # Show progress
+            message(f'Progress trials ({trial_num+1}/{num})', 'success', round((trial_num+1)/num*10))
 
         self.communicate({"$type": "terminate"})
 
         # Let the user know where the trial videos are stored
         print(f'The random id of this set of trials was {trial_id}')
-        print(f'You can find trial n at f"{path_videos}/{trial_id}_trial_n.mp4"')
-
+        return message(f'You can now find trial n for every n at f"{path_videos}/{trial_id}_trial_n.mp4"', 'success')
 
 if __name__ == "__main__":
     c = Collision()
     success = c.trial()
-    print('succes:', success)
+    print(success)
