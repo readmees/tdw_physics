@@ -17,9 +17,11 @@ import shutil
 # Added for collisions
 import random
 
+from runner_main import Runner
 
-
-class Collision(Controller):
+class Collision(Runner):
+    def __init__(self):
+        super().__init__(port=1071) 
     
     def collision_fall(self, commands, o_id1, o_id2):
         '''This method implements objects falling on top of each other, 
@@ -37,7 +39,7 @@ class Collision(Controller):
         commands.extend(self.get_add_physics_object(model_name="iron_box",
                                                     object_id=o_id1,
                                                     position={"x": 0, "y": 0, "z": 1}))
-        commands.extend(self.get_add_physics_object(model_name="rh10",
+        commands.extend(self.get_add_physics_object(model_name="iron_box",
                                                 object_id=o_id2,
                                                 position={"x": 1, "y": 0, "z": 1}))
         commands.extend([{"$type": "object_look_at",
@@ -47,6 +49,7 @@ class Collision(Controller):
                           "magnitude": random.uniform(20, 60),
                           "id": o_id2}])
         return commands
+    
     def trial(self, path):
         '''
         param path: "Images will be save to here"'''

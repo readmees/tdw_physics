@@ -1,39 +1,22 @@
 from tdw.controller import Controller
 from tdw.tdw_utils import TDWUtils
 from tdw.add_ons.third_person_camera import ThirdPersonCamera
-from typing import Dict
-from tdw.controller import Controller
-from tdw.add_ons.third_person_camera import ThirdPersonCamera
-from tdw.add_ons.collision_manager import CollisionManager
-from tdw.add_ons.object_manager import ObjectManager
-
-# Added for video
 from tdw.add_ons.image_capture import ImageCapture
-from tdw.backend.paths import EXAMPLE_CONTROLLER_OUTPUT_PATH
-from os import chdir, system
-from subprocess import call
 import shutil
-
-# Added for collisions
-import random
+import random   
 import os
 from helpers import images_to_video, message
 
-class Collision(Controller):
-    
-    def collision_fall(self, commands, o_id1, o_id2):
-        '''This method implements objects falling on top of each other, 
-        by placing one above the other'''
-        commands.extend(self.get_add_physics_object(model_name="iron_box",
-                                                    object_id=o_id1,
-                                                    position={"x": 0, "y": 3, "z": 0}))
-        commands.extend(self.get_add_physics_object(model_name="rh10",
-                                                object_id=o_id2,
-                                                position={"x": 0, "y": 0, "z": 0}))
-        
-    def collision_force(self, commands, o_id1, o_id2):
+class Runner(Controller):
+    def get_trial_initialization_commands(self):
         '''This method implements objects bumping into each other, 
         by placing next to the other, then applying a force towards the other one'''
+        self.o_ids = [self.get_unique_id() for _ in range(2)]
+        o_id1, o_id2 = self.o_ids
+
+        commands = [{"$type": "send_rigidbodies",
+                                    "frequency": "always"}]
+        
         commands.extend(self.get_add_physics_object(model_name="iron_box",
                                                     object_id=o_id1,
                                                     position={"x": 0, "y": 0, "z": 1}))
@@ -47,8 +30,20 @@ class Collision(Controller):
                           "magnitude": random.uniform(20, 60),
                           "id": o_id2}])
         return commands
+
+    def get_per_frame_commands(self, trial_type='object'):
+        '''Communicate once for every frame'''
+        for i in range(399):
+                self.communicate([])
+
+        for o_id in self.o_ids:
+            # Reset the scene by destroying the object.
+            self.communicate([{"$type": "destroy_object",
+                            "id": o_id},
+                            {"$type": "send_rigidbodies",
+                            "frequency": "never"}])
     
-    def trial(self, num=5, png=False, pass_masks=["_img", "_mask"]):
+    def run(self, num=5, png=False, pass_masks=["_img", "_mask"]):
         '''
         param png: If True, images will be lossless png files. Usually jpg should be enough, but only works for _img
         parm pass_masks: segmentation data and much more, see: https://github.com/threedworld-mit/tdw/blob/master/Documentation/api/command_api.md#set_pass_masks
@@ -111,26 +106,9 @@ class Collision(Controller):
         print(f"Video of trial n will be saved at {path_videos}/{trial_id}_trial_n.mp4")
 
         for trial_num in range(num):
-            o_ids = [self.get_unique_id() for _ in range(2)]
-            commands = [{"$type": "send_rigidbodies",
-                                      "frequency": "always"}]
+            self.communicate(self.get_trial_initialization_commands())
+            self.get_per_frame_commands(trial_type='object')
             
-            commands = self.collision_force(commands, o_ids[0], o_ids[1])
-
-            self.communicate(commands)
-            for i in range(400):
-                self.communicate([])
-
-            for o_id in o_ids:
-                # Reset the scene by destroying the object.
-                self.communicate([{"$type": "destroy_object",
-                                "id": o_id},
-                                {"$type": "send_rigidbodies",
-                                "frequency": "never"}])
-            
-            # Call ffmpeg to make video from frames in frames_temp
-            # Provide the path to the folder containing the images
-
             # Specify the output video file name
             output_video = f"{path_videos}/{trial_id}_trial_{trial_num}"
 
@@ -140,7 +118,7 @@ class Collision(Controller):
 
             # Show progress
             message(f'Progress trials ({trial_num+1}/{num})', 'success', round((trial_num+1)/num*10))
-
+            
         self.communicate({"$type": "terminate"})
 
         # Let the user know where the trial videos are stored
@@ -148,6 +126,6 @@ class Collision(Controller):
         return message(f'You can now find trial n for every n at f"{path_videos}/{trial_id}_trial_n.mp4"', 'success')
 
 if __name__ == "__main__":
-    c = Collision()
-    success = c.trial()
+    c = Runner()
+    success = c.run(num=1000, pass_masks=['_img'])
     print(success)
