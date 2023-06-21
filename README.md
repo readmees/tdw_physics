@@ -1,3 +1,5 @@
+A lot of this code is from the [tdw_physics](https://github.com/alters-mit/tdw_physics) repository, Copyright (c) 2021 Seth Alter
+
 # TDW Trials
 Implements automated generation of object, agent and transition based videos in TDW
 Note: internet connection needed
