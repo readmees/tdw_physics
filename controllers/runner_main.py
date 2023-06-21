@@ -2,6 +2,7 @@ from tdw.controller import Controller
 from tdw.tdw_utils import TDWUtils
 from tdw.add_ons.third_person_camera import ThirdPersonCamera
 from tdw.add_ons.image_capture import ImageCapture
+from tdw.librarian import SceneLibrarian
 import shutil
 import random   
 import os
@@ -12,31 +13,15 @@ class Runner(Controller):
         super().__init__(port=1071) 
         
     def trial_initialization_commands(self):
-        '''This method implements objects bumping into each other, 
-        by placing next to the other, then applying a force towards the other one'''
-        self.o_ids = [self.get_unique_id() for _ in range(2)]
-        o_id1, o_id2 = self.o_ids
-
-        commands = [{"$type": "send_rigidbodies",
-                                    "frequency": "always"}]
-        
-        commands.extend(self.get_add_physics_object(model_name="iron_box",
-                                                    object_id=o_id1,
-                                                    position={"x": 0, "y": 0, "z": 1}))
-        commands.extend(self.get_add_physics_object(model_name="iron_box",
-                                                object_id=o_id2,
-                                                position={"x": 1, "y": 0, "z": 1}))
-        commands.extend([{"$type": "object_look_at",
-                          "other_object_id": o_id1,
-                          "id": o_id2},
-                         {"$type": "apply_force_magnitude_to_object",
-                          "magnitude": random.uniform(20, 60),
-                          "id": o_id2}])
-        return commands
+        '''In this function the objects should be added, 
+        and initial forces etc. can be applied. Should return commands'''
+        return []
 
     def run_per_frame_commands(self, trial_type='object'):
-        '''Communicate once for every frame'''
-        for i in range(399):
+        '''Communicate once for every frame
+        param trial_type: you can choose if you would like to run an trial object, agent or transition based
+        '''
+        for i in range(20):
                 self.communicate([])
 
         for o_id in self.o_ids:
@@ -46,10 +31,22 @@ class Runner(Controller):
                             {"$type": "send_rigidbodies",
                             "frequency": "never"}])
     
-    def run(self, num=5, png=False, pass_masks=["_img", "_mask"]):
+    def set_camera(self):
+        # Add camera
+        camera = ThirdPersonCamera(position={"x": 2, "y": 1.6, "z": -1},
+                           look_at={"x": 0, "y": 0, "z": 0},
+                           avatar_id=self.controller_name)
+        self.add_ons.append(camera)
+    
+    def run(self, num=5, trial_type='object', png=False, pass_masks=["_img", "_mask"], framerate = 30, room='random'):
         '''
+        param num: the number of trials
+        param trial_type: you can choose if you would like to run an trial object, agent or transition based
         param png: If True, images will be lossless png files. Usually jpg should be enough, but only works for _img
-        parm pass_masks: segmentation data and much more, see: https://github.com/threedworld-mit/tdw/blob/master/Documentation/api/command_api.md#set_pass_masks
+        param pass_masks: segmentation data and much more, see: https://github.com/threedworld-mit/tdw/blob/master/Documentation/api/command_api.md#set_pass_masks
+        param framerate: target framerate and fps of video, should be int
+        param room: can be any of the specified scene names, 'empty' will create an empty room, 'random_unsafe' pick a random room which is not safe,
+                    because not all rooms are tested
         '''
         # Check if input Camera params are valid
         if not isinstance(pass_masks, list):
@@ -66,18 +63,22 @@ class Runner(Controller):
         # Clear the list of add-ons.
         self.add_ons.clear()
 
-        # Add camera
+        # Set camera
+        self.set_camera()
         main_cam = self.controller_name
-        camera = ThirdPersonCamera(position={"x": 2, "y": 1.6, "z": -1},
-                           look_at={"x": 0, "y": 0, "z": 0},
-                           avatar_id=main_cam)
-        self.add_ons.append(camera)
         
         # Define path for output data frames
         path_main = '../data'
         paths = [f'{path_main}/{name}/{main_cam}' for name in ['frames_temp', 'backgrounds', 'videos']]
         path_frames, path_backgr, path_videos = paths
 
+        # Remove previous frames (if possible) 
+        # #NOTE: could be more efficient, because frames folder gets recreated
+        try:
+            shutil.rmtree(path_frames)
+        except FileNotFoundError:
+             pass
+        
         # Make sure paths exist
         for path in paths:
             os.makedirs(path, exist_ok=True)
@@ -85,27 +86,42 @@ class Runner(Controller):
         # Generate random id for this set of trials, and output for user
         trial_id = random.randint(10**16, 10**17-1) 
         print(f'The random id of this set of trials will be {trial_id}')
-
-        # Remove previous frames (if possible)
-        try:
-            shutil.rmtree(path_frames)
-        except FileNotFoundError:
-             pass
         
         # Save 'normal' output images/frames_temp for video
         self.add_ons.append(ImageCapture(path=path_main+'/frames_temp/', avatar_ids=[main_cam], png=png, pass_masks=pass_masks))
         
-        # Create room and set target framerate
-        framerate = 30
-        commands = [TDWUtils.create_empty_room(12, 12),
-                    {"$type": "set_target_framerate",
-                    "framerate": framerate}]
-        self.communicate(commands)
+        # Create room
+        lib = SceneLibrarian(library="scenes.json")
+        scene_names = [record.name for record in lib.records]
+        if room == 'empty':
+            commands = [TDWUtils.create_empty_room(12, 12)]
+        elif room in scene_names or room == 'random':
+            scene_name = random.choice(scene_names) if room == 'random' else room
+            print('scene_name=', scene_name)
+            commands = [self.get_add_scene(scene_name=scene_name)]
+        else:
+            return message(f"param room should be 'empty', 'random' or any of the following names: \n {scene_names}")
 
+        # Set target framerate
+        commands.append({"$type": "set_target_framerate",
+                        "framerate": framerate})
+        self.communicate(commands)
+        import time
+        
         # Save scene/background separately
         ext = '.png' if png else '.jpg'
-        shutil.move(f'{path_frames}/img_0000{ext}', f'{path_backgr}/background_{main_cam}{trial_id}{ext}') 
-        
+        moved = False
+        while not moved:
+            try:
+                shutil.move(f'{path_frames}/img_0000{ext}', f'{path_backgr}/background_{main_cam}{trial_id}{ext}') 
+                moved = True
+            except FileNotFoundError:
+                # Scene is still loading
+                print(message("Loading scene is taking a long time", 'warning'))
+                time.sleep(5)
+
+                #NOTE: this might create unneccesary extra frames
+                self.communicate([])
         print(f"Video of trial n will be saved at {path_videos}/{trial_id}_trial_n.mp4")
 
         for trial_num in range(num):
@@ -129,7 +145,7 @@ class Runner(Controller):
         return message(f'You can now find trial n for every n at f"{path_videos}/{trial_id}_trial_n.mp4"', 'success')
 
 if __name__ == "__main__":
-    c = Collision(run_class=Runner)
+    c = Runner()
     c.controller_name = 'test'
     success = c.run(num=1000, pass_masks=['_img'])
     print(success)
