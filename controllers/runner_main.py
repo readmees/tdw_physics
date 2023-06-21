@@ -8,7 +8,10 @@ import os
 from helpers import images_to_video, message
 
 class Runner(Controller):
-    def get_trial_initialization_commands(self):
+    def init():
+        super().__init__(port=1071) 
+        
+    def trial_initialization_commands(self):
         '''This method implements objects bumping into each other, 
         by placing next to the other, then applying a force towards the other one'''
         self.o_ids = [self.get_unique_id() for _ in range(2)]
@@ -31,7 +34,7 @@ class Runner(Controller):
                           "id": o_id2}])
         return commands
 
-    def get_per_frame_commands(self, trial_type='object'):
+    def run_per_frame_commands(self, trial_type='object'):
         '''Communicate once for every frame'''
         for i in range(399):
                 self.communicate([])
@@ -64,14 +67,14 @@ class Runner(Controller):
         self.add_ons.clear()
 
         # Add camera
-        main_cam = "collision"
+        main_cam = self.controller_name
         camera = ThirdPersonCamera(position={"x": 2, "y": 1.6, "z": -1},
                            look_at={"x": 0, "y": 0, "z": 0},
                            avatar_id=main_cam)
         self.add_ons.append(camera)
         
         # Define path for output data frames
-        path_main = 'data'
+        path_main = '../data'
         paths = [f'{path_main}/{name}/{main_cam}' for name in ['frames_temp', 'backgrounds', 'videos']]
         path_frames, path_backgr, path_videos = paths
 
@@ -106,8 +109,8 @@ class Runner(Controller):
         print(f"Video of trial n will be saved at {path_videos}/{trial_id}_trial_n.mp4")
 
         for trial_num in range(num):
-            self.communicate(self.get_trial_initialization_commands())
-            self.get_per_frame_commands(trial_type='object')
+            self.communicate(self.trial_initialization_commands())
+            self.run_per_frame_commands(trial_type='object')
             
             # Specify the output video file name
             output_video = f"{path_videos}/{trial_id}_trial_{trial_num}"
@@ -126,6 +129,7 @@ class Runner(Controller):
         return message(f'You can now find trial n for every n at f"{path_videos}/{trial_id}_trial_n.mp4"', 'success')
 
 if __name__ == "__main__":
-    c = Runner()
+    c = Collision(run_class=Runner)
+    c.controller_name = 'test'
     success = c.run(num=1000, pass_masks=['_img'])
     print(success)
