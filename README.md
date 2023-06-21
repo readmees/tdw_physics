@@ -1,5 +1,3 @@
-A lot of this code is from the [tdw_physics](https://github.com/alters-mit/tdw_physics) repository, Copyright (c) 2021 Seth Alter
-
 # TDW Trials
 Implements automated generation of object, agent and transition based videos in TDW
 Note: internet connection needed
@@ -24,11 +22,20 @@ Note: internet connection needed
 
 Segmentation and other data available by specifying pass masks see: https://github.com/threedworld-mit/tdw/blob/master/Documentation/api/command_api.md#set_pass_masks
 
-TODO:
-Streamline platform
-Chose better models
-Make a objectshower or use the TDW objectshower
-Implement rolling down controller
-Improve occlusion: don't stop behind object, but behind object in line with camera angle
-Improve occlusion: in objectbased, use force
-Improve containment: fix object
+## Copyright
+A lot of this code is from the [tdw_physics](https://github.com/alters-mit/tdw_physics) repository, Copyright (c) 2021 Seth Alter
+
+## Notes
+- Not all the scenes are tested, trials are tested in empty room, so objects might spawn in walls etc. or empty frames mith be 
+
+## TODO
+- ~~Streamline platform~~
+- Object based trials first version
+- Transition based trials first version
+- Agent based trials first version
+- Chose better models
+- Make a objectshower or use the TDW objectshower
+- Implement rolling down controller
+- Improve occlusion: don't stop behind object, but behind object in line with camera angle
+- Improve occlusion: in objectbased, use force
+- Improve containment: fix object
