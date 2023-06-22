@@ -10,10 +10,10 @@ from tdw_physics.util import get_args
 
 class Occlusion(TransformsDataset):
     def __init__(self, port: int = 1071):
-        Controller.MODEL_LIBRARIANS["models_full.json"] = ModelLibrarian("models_full.json")
+        Controller.MODEL_LIBRARIANS["models_core.json"] = ModelLibrarian("models_core.json")
         self.small_models: List[ModelRecord] = []
         self.big_models: List[ModelRecord] = []
-        for record in Controller.MODEL_LIBRARIANS["models_full.json"].records:
+        for record in Controller.MODEL_LIBRARIANS["models_core.json"].records:
             if record.do_not_use or record.composite_object or record.asset_bundle_sizes["Windows"] > 1000000:
                 continue
             bounds = record.bounds
@@ -30,7 +30,7 @@ class Occlusion(TransformsDataset):
         super().__init__(port=port)
 
     def get_scene_initialization_commands(self) -> List[dict]:
-        return [self.get_add_scene(scene_name="tdw_room"),
+        return [self.get_add_scene(scene_name="box_room_2018"),
                 {"$type": "set_aperture",
                  "aperture": 3.0},
                 {"$type": "set_focus_distance",
@@ -55,7 +55,7 @@ class Occlusion(TransformsDataset):
         record = random.choice(self.big_models)
         commands.append(self.get_add_object(model_name=record.name,
                                             object_id=big_id,
-                                            library="models_full.json",
+                                            library="models_core.json",
                                             position=TDWUtils.VECTOR3_ZERO,
                                             rotation={"x": 0, "y": random.uniform(0, 360), "z": 0}))
         # Add a small object nearby.
@@ -64,7 +64,7 @@ class Occlusion(TransformsDataset):
         record = random.choice(self.small_models)
         commands.append(self.get_add_object(model_name=record.name,
                                             object_id=self.get_unique_id(),
-                                            library="models_full.json",
+                                            library="models_core.json",
                                             position={"x": np.cos(theta) * o_r, "y": 0, "z": np.sin(theta) * o_r},
                                             rotation={"x": 0, "y": random.uniform(0, 360), "z": 0}))
         a_r = random.uniform(2.1, 3)
@@ -78,9 +78,10 @@ class Occlusion(TransformsDataset):
                                             {"$type": "look_at",
                                              "object_id": big_id,
                                              "use_centroid": True},
-                                            {"$type": "focus_on_object",
-                                             "object_id": big_id,
-                                             "use_centroid": True}])
+                                            # {"$type": "focus_on_object",
+                                            #  "object_id": big_id,
+                                            #  "use_centroid": True}
+                                            ])
         commands.extend(self.per_frame_commands.pop(0))
         return commands
 

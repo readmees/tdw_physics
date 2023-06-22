@@ -14,52 +14,25 @@ class Containment(RigidbodiesDataset):
     object and is shaken violently, causing the target object to move around and possibly fall out.
     """
 
-    Controller.MODEL_LIBRARIANS["models_full.json"] = ModelLibrarian("models_full.json")
-    CONTAINERS = ["woodbowl_a02",
-                  "blue_basket",
-                  "bucketnew",
-                  "b04_at-0002",
-                  "b04_plastic_bucket",
-                  "b04_bowl_smooth",
-                  "woven_box",
-                  "teatray",
-                  "b04_wicker_tray",
-                  "b06_brass_ornate_tray",
-                  "ceramic_pot",
-                  "b05_coal_hod",
-                  "b03_bucket",
-                  "int_kitchen_accessories_le_creuset_bowl_30cm",
-                  "serving_bowl",
-                  "bowl_wood_a_01",
-                  "wooden_box",
-                  "wine_box_vray",
-                  "b03_object05",
-                  "b03_696615_object001",
-                  "b04_fruit_basket_11",
-                  "b03_basket"]
-    OBJECTS = ["fanta_orange_can_12_fl_oz_vray",
-               "hexagonal_toy",
-               "b03_sphere_chocolate",
-               "coca-cola_can_001",
-               "b05_baseballnew_v03_12",
-               "b06_green_new",
-               "star_wood_block",
-               "amphora_jar_vase",
-               "b03_burger",
-               "golf",
-               "dice",
-               "apple",
-               "wine_bottle",
-               "jug01",
-               "b03_723329_croissant",
-               "moet_chandon_bottle_vray",
-               "b04_banana",
-               "b04_orange_00",
-               "orange",
-               "vm_v2_015",
-               "b03_dice",
-               "bread_02",
-               "bread_01"]
+    Controller.MODEL_LIBRARIANS["models_core.json"] = ModelLibrarian("models_core.json")
+    CONTAINERS = ["b03_696615_object001",
+"b03_object05",
+"b04_bowl_smooth",
+"int_kitchen_accessories_le_creuset_bowl_30cm",
+"serving_bowl",
+"teatray",
+"woven_box"]
+    OBJECTS = ["amphora_jar_vase",
+"apple",
+"b03_burger",
+"b04_banana",
+"b04_orange_00",
+"golf",
+"hexagonal_toy",
+"jug01",
+"moet_chandon_bottle_vray",
+"orange",
+"star_wood_block"]
     O_X = -1.3
     O_Z = -2.15
 
@@ -105,7 +78,7 @@ class Containment(RigidbodiesDataset):
         container_scale = TDWUtils.get_unit_scale(PHYSICS_INFO[container_name].record) * 0.6
         container_id = self.get_unique_id()
         commands.extend(self.get_add_physics_object(model_name=container_name,
-                                                    library="models_full.json",
+                                                    library="models_core.json",
                                                     object_id=container_id,
                                                     position={"x": Containment.O_X,
                                                               "y": 0.25,
@@ -117,10 +90,10 @@ class Containment(RigidbodiesDataset):
         # Add a random target object, with random size, mass, bounciness and initial orientation.
         object_name = choice(Containment.OBJECTS)
         o_id = self.get_unique_id()
-        o_record = Controller.MODEL_LIBRARIANS["models_full.json"].get_record(object_name)
+        o_record = Controller.MODEL_LIBRARIANS["models_core.json"].get_record(object_name)
         o_scale = TDWUtils.get_unit_scale(o_record) * uniform(0.2, 0.3)
         commands.extend(self.get_add_physics_object(model_name=o_record.name,
-                                                    library="models_full.json",
+                                                    library="models_core.json",
                                                     object_id=o_id,
                                                     position={"x": Containment.O_X,
                                                               "y": 0.6,

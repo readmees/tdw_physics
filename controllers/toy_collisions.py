@@ -18,7 +18,7 @@ class ToysDataset(RigidbodiesDataset):
     """
 
     def __init__(self, port: int = 1071):
-        lib = ModelLibrarian(str(Path("toys.json").resolve()))
+        lib = ModelLibrarian('models_core.json')
         self.records = lib.records
         self._target_id: int = 0
 
@@ -64,7 +64,7 @@ class ToysDataset(RigidbodiesDataset):
             # Add the object and the radius, which is defined by its scale.
             object_positions.append(ObjectPosition(position=o_pos, radius=scale))
             commands.extend(self.get_add_physics_object(model_name=self.records[i].name,
-                                                        library="models_full.json",
+                                                        library="models_core.json",
                                                         object_id=o_id,
                                                         position=self._get_object_position(
                                                             object_positions=object_positions),
