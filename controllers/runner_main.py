@@ -1,3 +1,4 @@
+# STATUS: Passing
 from tdw.controller import Controller
 from tdw.tdw_utils import TDWUtils
 from tdw.add_ons.third_person_camera import ThirdPersonCamera
@@ -73,7 +74,7 @@ class Runner(Controller):
         path_frames, path_backgr, path_videos = paths
 
         # Remove previous frames (if possible) 
-        # #NOTE: could be more efficient, because frames folder gets recreated
+        #NOTE: could be more efficient, because frames folder gets recreated
         try:
             shutil.rmtree(path_frames)
         except FileNotFoundError:
@@ -84,6 +85,7 @@ class Runner(Controller):
             os.makedirs(path, exist_ok=True)
 
         # Generate random id for this set of trials, and output for user
+        #NOTE: in theory two trials could have the same random id 
         trial_id = random.randint(10**16, 10**17-1) 
         print(f'The random id of this set of trials will be {trial_id}')
         

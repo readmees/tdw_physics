@@ -1,4 +1,4 @@
-# STATUS: Not finished
+# STATUS: Passing
 from tdw.controller import Controller
 from tdw.tdw_utils import TDWUtils
 from tdw.add_ons.third_person_camera import ThirdPersonCamera
@@ -27,7 +27,6 @@ class Collision(Runner):
 
     def trial_initialization_commands(self):
         # Your code here
-        
         return []
     
 if __name__ == "__main__":
