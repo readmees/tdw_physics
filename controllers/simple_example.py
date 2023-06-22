@@ -21,13 +21,42 @@ import random
 from runner_main import Runner
 
 class Collision(Runner):
+    def collision_fall(self, commands, o_id1, o_id2):
+        '''This method implements objects falling on top of each other, 
+        by placing one above the other'''
+        commands.extend(self.get_add_physics_object(model_name="iron_box",
+                                                    object_id=o_id1,
+                                                    position={"x": 0, "y": 3, "z": 0}))
+        commands.extend(self.get_add_physics_object(model_name="rh10",
+                                                object_id=o_id2,
+                                                position={"x": 0, "y": 0, "z": 0}))
+        
+    def collision_force(self, commands, o_id1, o_id2):
+        '''This method implements objects bumping into each other, 
+        by placing next to the other, then applying a force towards the other one'''
+        commands.extend(self.get_add_physics_object(model_name="iron_box",
+                                                    object_id=o_id1,
+                                                    position={"x": 0, "y": 0, "z": 1}))
+        commands.extend(self.get_add_physics_object(model_name="rh10",
+                                                object_id=o_id2,
+                                                position={"x": 1, "y": 0, "z": 1}))
+        commands.extend([{"$type": "object_look_at",
+                          "other_object_id": o_id1,
+                          "id": o_id2},
+                         {"$type": "apply_force_magnitude_to_object",
+                          "magnitude": random.uniform(20, 60),
+                          "id": o_id2}])
+        
     def __init__(self):
         super().__init__(port=1071) 
         self.controller_name = 'simple'
 
     def trial_initialization_commands(self):
-        # Your code here
-        return []
+        o_id1 = self.get_unique_id()
+        o_id2 = self.get_unique_id()
+
+        commands = self.collision_force(commands, o_id1, o_id2)
+        return commands
     
 if __name__ == "__main__":
     c = Collision()
