@@ -86,6 +86,8 @@ class Runner(Controller):
         if len(set(pass_masks)) != len(pass_masks):
             return message('pass_mask cannot contain any double masks', 'error')
         
+        #TODO check input for all params
+
         # Clear the list of add-ons.
         self.add_ons.clear()
 
@@ -165,7 +167,7 @@ class Runner(Controller):
                 return trial_commands
             self.communicate(trial_commands)
 
-            self.run_per_frame_commands(trial_type='object', tot_frames=tot_frames)
+            self.run_per_frame_commands(trial_type=trial_type, tot_frames=tot_frames)
             
             # Specify the output video file name
             output_video = f"{path_videos}/{trial_id}_trial_{trial_num}"

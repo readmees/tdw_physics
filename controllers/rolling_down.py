@@ -87,7 +87,31 @@ class Slope(Runner):
         
         return commands
     
+    def run_per_frame_commands(self, trial_type, tot_frames):
+        '''Communicate once for every frame
+        param trial_type: you can choose if you would like to run an trial object, agent or transition based
+        param tot_frames: the total amount of frames per trial
+        '''
+        #TODO: improve transition
+        # transition_frame = random.choice(list(range(tot_frames)))
+        transition_frame = tot_frames//3
+        for i in range(tot_frames):
+            if i >= transition_frame and trial_type == 'transition':
+                print('transition, started')
+                self.communicate([{"$type": "teleport_object_by", "position": {"x": -.05, "y": 0.0, "z": 0}, "id": self.o_ids[0], "absolute": True}])
+            else:
+                self.communicate([])
+
+        destroy_commands = []
+        for o_id in self.o_ids:
+            # Reset the scene by destroying the object.
+            destroy_commands.append({"$type": "destroy_object",
+                            "id": o_id})
+        destroy_commands.append({"$type": "send_rigidbodies",
+                            "frequency": "never"})
+        self.communicate(destroy_commands)
+    
 if __name__ == "__main__":
     c = Slope()
-    success = c.run(num=20, pass_masks=['_img'], room='empty', tot_frames=50, add_slope=True)
+    success = c.run(num=5, pass_masks=['_img'], room='empty', tot_frames=200, add_slope=True, trial_type='transition')
     print(success)
