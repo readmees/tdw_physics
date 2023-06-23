@@ -21,7 +21,6 @@ class ObjectInfo:
         self.position = position
         self.radius = radius
         self.id = id
-
  
 def get_random_avatar_position(radius_min: float, radius_max: float, y_min: float, y_max: float,
                                 center: Dict[str, float], angle_min: float = 0,

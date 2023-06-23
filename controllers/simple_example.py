@@ -30,6 +30,7 @@ class Collision(Runner):
         commands.extend(self.get_add_physics_object(model_name="rh10",
                                                 object_id=o_id2,
                                                 position={"x": 0, "y": 0, "z": 0}))
+        return commands
         
     def collision_force(self, commands, o_id1, o_id2):
         '''This method implements objects bumping into each other, 
@@ -46,6 +47,7 @@ class Collision(Runner):
                          {"$type": "apply_force_magnitude_to_object",
                           "magnitude": random.uniform(20, 60),
                           "id": o_id2}])
+        return commands
         
     def __init__(self):
         super().__init__(port=1071) 
@@ -55,10 +57,13 @@ class Collision(Runner):
         o_id1 = self.get_unique_id()
         o_id2 = self.get_unique_id()
 
-        commands = self.collision_force(commands, o_id1, o_id2)
+        # Always store object ids so the main runner knows which to remove
+        self.o_ids = [o_id1, o_id2]
+
+        commands = self.collision_force([], o_id1, o_id2)
         return commands
     
 if __name__ == "__main__":
     c = Collision()
-    success = c.run(num=3, pass_masks=['_img'])
+    success = c.run(num=10, pass_masks=['_img', '_id', '_mask', '_category'], room='empty', add_slope=False)
     print(success)

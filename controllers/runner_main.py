@@ -8,6 +8,7 @@ import shutil
 import random   
 import os
 from helpers import images_to_video, message
+import time
 
 class Runner(Controller):
     def init():
@@ -18,19 +19,40 @@ class Runner(Controller):
         and initial forces etc. can be applied. Should return commands'''
         return []
 
-    def run_per_frame_commands(self, trial_type='object'):
+    def run_per_frame_commands(self, trial_type, tot_frames):
         '''Communicate once for every frame
         param trial_type: you can choose if you would like to run an trial object, agent or transition based
+        param tot_frames: the total amount of frames per trial
         '''
-        for i in range(20):
+        for i in range(tot_frames):
                 self.communicate([])
 
+        destroy_commands = []
         for o_id in self.o_ids:
             # Reset the scene by destroying the object.
-            self.communicate([{"$type": "destroy_object",
-                            "id": o_id},
-                            {"$type": "send_rigidbodies",
-                            "frequency": "never"}])
+            destroy_commands.append({"$type": "destroy_object",
+                            "id": o_id})
+        destroy_commands.append({"$type": "send_rigidbodies",
+                            "frequency": "never"})
+        self.communicate(destroy_commands)
+    
+    def add_slope(self, commands = []):
+        '''This method adds a slope for the rolling down trials, by adding a freezed cube object'''
+        slope_id = self.get_unique_id()
+
+        commands.extend(self.get_add_physics_object(model_name="cube",
+                                                    library="models_flex.json",
+                                                    object_id=slope_id,
+                                                    rotation={"x": 0, "y": 0, "z": random.uniform(216, 244)},
+                                                    position={"x": 0, "y": 0, "z": 0}))
+        
+        # Freeze position and rotation for each axis
+        commands.extend([{"$type": "set_rigidbody_constraints", "id": slope_id, "freeze_position_axes": {"x": 1, "y": 1, "z": 1}, "freeze_rotation_axes": {"x": 1, "y": 1, "z": 1}}])
+        # Set a random color.
+        commands.append({"$type": "set_color",
+                         "color": {"r": random.random(), "g": random.random(), "b": random.random(), "a": 1.0},
+                         "id": slope_id})
+        return commands
     
     def set_camera(self):
         # Add camera
@@ -39,7 +61,8 @@ class Runner(Controller):
                            avatar_id=self.controller_name)
         self.add_ons.append(camera)
     
-    def run(self, num=5, trial_type='object', png=False, pass_masks=["_img", "_mask"], framerate = 30, room='random'):
+    def run(self, num=5, trial_type='object', png=False, pass_masks=["_img", "_mask"], framerate = 30, room='random', 
+            tot_frames=200, add_slope=False):
         '''
         param num: the number of trials
         param trial_type: you can choose if you would like to run an trial object, agent or transition based
@@ -48,6 +71,8 @@ class Runner(Controller):
         param framerate: target framerate and fps of video, should be int
         param room: can be any of the specified scene names, 'empty' will create an empty room, 'random_unsafe' pick a random room which is not safe,
                     because not all rooms are tested
+        param tot_frames: nummer of frames per trials
+        param add_slope: add slope to the background, for rolling down trials
         '''
         # Check if input Camera params are valid
         if not isinstance(pass_masks, list):
@@ -107,10 +132,17 @@ class Runner(Controller):
         # Set target framerate
         commands.append({"$type": "set_target_framerate",
                         "framerate": framerate})
-        self.communicate(commands)
-        import time
+        
+        # Add slope to the background, if param add_slope is true
+        if isinstance(add_slope, bool):
+            if add_slope:
+                commands = self.add_slope(commands)
+            self.slope_added = add_slope
+        else:
+            return message('Parameter add_slope should be of type bool', 'error')
         
         # Save scene/background separately
+        self.communicate(commands)
         ext = '.png' if png else '.jpg'
         moved = False
         while not moved:
@@ -127,8 +159,13 @@ class Runner(Controller):
         print(f"Video of trial n will be saved at {path_videos}/{trial_id}_trial_n.mp4")
 
         for trial_num in range(num):
-            self.communicate(self.trial_initialization_commands())
-            self.run_per_frame_commands(trial_type='object')
+            # Initialize trial and return errors if something is wrong
+            trial_commands = self.trial_initialization_commands()
+            if not isinstance(trial_commands, list):
+                return trial_commands
+            self.communicate(trial_commands)
+
+            self.run_per_frame_commands(trial_type='object', tot_frames=tot_frames)
             
             # Specify the output video file name
             output_video = f"{path_videos}/{trial_id}_trial_{trial_num}"
