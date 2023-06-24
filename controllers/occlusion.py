@@ -100,7 +100,7 @@ class Occlusion(Controller):
                                                         static_friction=random.uniform(0, 0.9),
                                                         bounciness=random.uniform(0, 1),
                                                         scale_factor={"x": scale, "y": scale, "z": scale}))
-        
+    
 
     def trial(self, path):
         '''

@@ -93,8 +93,8 @@ class Slope(Runner):
         param tot_frames: the total amount of frames per trial
         '''
         #TODO: improve transition
-        # transition_frame = random.choice(list(range(tot_frames)))
-        transition_frame = tot_frames//3
+        transition_frame = random.choice(list(range(tot_frames)))
+        # transition_frame = tot_frames//3
         for i in range(tot_frames):
             if i >= transition_frame and trial_type == 'transition':
                 print('transition, started')
@@ -113,5 +113,5 @@ class Slope(Runner):
     
 if __name__ == "__main__":
     c = Slope()
-    success = c.run(num=5, pass_masks=['_img'], room='empty', tot_frames=200, add_slope=True, trial_type='transition')
+    success = c.run(num=3, pass_masks=['_img', '_id', '_category'], room='empty', tot_frames=150, add_slope=True, trial_type='transition')
     print(success)

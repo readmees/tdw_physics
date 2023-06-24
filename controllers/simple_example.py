@@ -50,7 +50,7 @@ class Collision(Runner):
         return commands
         
     def __init__(self):
-        super().__init__(port=1071) 
+        super().__init__(port=1000) 
         self.controller_name = 'simple'
 
     def trial_initialization_commands(self):
@@ -65,5 +65,5 @@ class Collision(Runner):
     
 if __name__ == "__main__":
     c = Collision()
-    success = c.run(num=10, pass_masks=['_img', '_id', '_mask', '_category'], room='empty', add_slope=False)
+    success = c.run(num=3, pass_masks=['_img', '_id', '_mask', '_category'], room='empty', add_slope=False, tot_frames=100, png=False)
     print(success)

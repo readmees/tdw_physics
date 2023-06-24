@@ -129,7 +129,7 @@ class Runner(Controller):
             print('scene_name=', scene_name)
             commands = [self.get_add_scene(scene_name=scene_name)]
         else:
-            return message(f"param room should be 'empty', 'random' or any of the following names: \n {scene_names}")
+            return message(f"param room should be 'empty', 'random' or any of the following names: \n {scene_names}", 'error')
 
         # Set target framerate
         commands.append({"$type": "set_target_framerate",
