@@ -1,4 +1,6 @@
 # STATUS: V1 - Experimential
+#TODO choose objects manually
+#TODO something seems to go wrong with scale
 from tdw.controller import Controller
 from tdw.tdw_utils import TDWUtils
 from tdw.add_ons.third_person_camera import ThirdPersonCamera
@@ -25,9 +27,13 @@ from typing import Dict
 from helpers import ObjectInfo, get_random_avatar_position
 from runner_main import Runner
 
+# To keep track of where the moving objects is
+from tdw.output_data import Transforms, OutputData
+
 class Occlusion(Runner):
     def __init__(self):
         self.controller_name = 'occlusion'
+
         lib = ModelLibrarian('models_core.json')
         self.records = lib.records
 
@@ -98,26 +104,55 @@ class Occlusion(Runner):
                            look_at={"x": 0, "y": 0, "z": 0},
                            avatar_id="occlusion")
         self.add_ons.append(camera)
+    
+    def get_ob_pos(self, o_id, resp):
+        '''Get object position'''
+
+        for i in range(len(resp) - 1):
+            r_id = OutputData.get_data_type_id(resp[i])
+            # Parse Transforms output data to get the object's position.
+            if r_id == "tran":
+                transforms = Transforms(resp[i])
+                for j in range(transforms.get_num()):
+                    if transforms.get_id(j) == o_id:
+                        # Return position of object with o_id as object id
+                        return transforms.get_position(j)
 
     def run_per_frame_commands(self, trial_type, tot_frames):
-        # Define standard speed and direction
-        speed = random.uniform(0.05, 0.1) if self.direction == 'left' else -random.uniform(0.05, 0.1)
-
         # Check if transition is done
         transition_compl = False             
 
-        for i in range(200):
-            self.o_moving_loc['z'] += speed
-            self.communicate([{"$type": "teleport_object", "position": self.o_moving_loc, "id": self.o_ids[0]}])
-
+        for i in range(tot_frames):
             # Check if this is object based or transition trial
             if trial_type == 'transition':
                 # Start transition when it's behind the object #TODO: adjust for line of camera
-                if self.o_moving_loc['z'] > self.o_occl_loc_z and speed > 0 or self.o_moving_loc['z'] < self.o_occl_loc_z and speed < 0:
+                if self.o_moving_loc['z'] > self.o_occl_loc_z and self.direction == 'left' or self.o_moving_loc['z'] < self.o_occl_loc_z and self.direction == 'right':
+                    commands = []
                     if not transition_compl:
                         # Choose between reverse random speed change, stop, random speed change
-                        speed = random.choice([-random.uniform(0.01, 0.2), 0, random.uniform(0.01, 0.2), -speed])                 
+                        speed = random.choice([-random.uniform(0.01, 0.2), 0, random.uniform(0.01, 0.2)])                 
                         transition_compl = True
+
+                        # Freeze object, then start 'manual' movement
+                        commands.extend([{"$type": "set_rigidbody_constraints", "id": self.o_ids[0], "freeze_position_axes": {"x": 1, "y": 1, "z": 1}, "freeze_rotation_axes": {"x": 1, "y": 1, "z": 1}}])
+                        commands.extend([{"$type": "set_rigidbody_constraints", "id": self.o_ids[0], "freeze_position_axes": {"x": 0, "y": 0, "z": 0}, "freeze_rotation_axes": {"x": 0, "y": 0, "z": 0}}])
+                    
+                    # Start 'manual' movement
+                    commands.extend([{"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[0], "absolute": True}])
+                    self.communicate(commands)
+                else:
+                    # Store response and make frame
+                    resp = self.communicate([])
+
+                    # Update previous position with current position, only update z position 
+                    # #NOTE: I assume here that the output of get_ob_pos is [x, y, z]
+                    for axis_name, axis_val in zip(['x', 'y', 'z'], self.get_ob_pos(self.o_ids[0], resp)):
+                        self.o_moving_loc[axis_name] = axis_val
+                    
+                    print('pos:', self.o_moving_loc)
+
+            if trial_type == 'object':
+                self.communicate([])
         
         # Reset the scene by destroying the objects
         destroy_commands = []
@@ -143,9 +178,27 @@ class Occlusion(Runner):
 
         # Add objects and their ids, first id is moving object, second collider
         self.o_ids = [self.get_unique_id(), self.get_unique_id()]
-        
-        return self.add_occ_objects()
+        moving_o_id = self.o_ids[0]
+        commands = self.add_occ_objects()
 
+        # Apply point object towards middle (but behind occluder) #TODO does not account for scale of object
+        commands.append({"$type": "object_look_at_position", 
+                         "position": {"x": self.o_moving_loc['x'], 
+                                      "y": 0, 
+                                      "z": 0},
+                          "id": moving_o_id})
+        
+        # Apply force
+        commands.append({"$type": "apply_force_magnitude_to_object",
+                          "magnitude": random.uniform(20, 60),
+                          "id": moving_o_id})
+        
+        #TODO Make sure objects cannot fly or even bounce  maybe this is not necessary with the right objects
+         
+        # Keep track of transforms, so we can keep track of the movement
+        commands.append({"$type": "send_transforms",
+                                  "frequency": "always"})
+        return commands
 if __name__ == "__main__":
     c = Occlusion()
     success = c.run(num=5, pass_masks=['_img', '_id'], room='empty', tot_frames=150, add_slope=False, trial_type='transition')
