@@ -66,26 +66,6 @@ class Slope(Runner):
         self.objects = ["apple",
                         "golf",
                     "orange"]
-
-    def trial_initialization_commands(self):
-        if not self.slope_added:
-            return message('Rolling down trials should have slope', 'error')
-        
-        
-        
-        o_id1 = self.get_unique_id()
-        o_id2 = self.get_unique_id()
-
-        # Always store object ids so the main runner knows which to remove
-        self.o_ids = [o_id1]
-
-        commands = []
-        commands.extend(self.get_add_physics_object(model_name=random.choice(self.objects),
-                                                    library='models_core.json',
-                                                    object_id=o_id1,
-                                                    position={"x": .5, "y": random.uniform(.5, 1.5), "z": 0}))
-        
-        return commands
     
     def run_per_frame_commands(self, trial_type, tot_frames):
         '''Communicate once for every frame
@@ -110,6 +90,25 @@ class Slope(Runner):
         destroy_commands.append({"$type": "send_rigidbodies",
                             "frequency": "never"})
         self.communicate(destroy_commands)
+
+    def trial_initialization_commands(self):
+        if not self.slope_added:
+            return message('Rolling down trials should have slope', 'error')
+        
+        
+        
+        o_id1 = self.get_unique_id()
+        o_id2 = self.get_unique_id()
+
+        # Always store object ids so the main runner knows which to remove
+        self.o_ids = [o_id1]
+
+        commands = []
+        commands.extend(self.get_add_physics_object(model_name=random.choice(self.objects),
+                                                    library='models_core.json',
+                                                    object_id=o_id1,
+                                                    position={"x": .5, "y": random.uniform(.5, 1.5), "z": 0}))
+        return commands
     
 if __name__ == "__main__":
     c = Slope()
