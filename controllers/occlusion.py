@@ -148,8 +148,6 @@ class Occlusion(Runner):
                     # #NOTE: I assume here that the output of get_ob_pos is [x, y, z]
                     for axis_name, axis_val in zip(['x', 'y', 'z'], self.get_ob_pos(self.o_ids[0], resp)):
                         self.o_moving_loc[axis_name] = axis_val
-                    
-                    print('pos:', self.o_moving_loc)
 
             if trial_type == 'object':
                 self.communicate([])
