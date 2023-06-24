@@ -1,11 +1,10 @@
-# STATUS: Not updated for new streamlines process yet
+# STATUS: V1 - Experimential
 from tdw.controller import Controller
 from tdw.tdw_utils import TDWUtils
 from tdw.add_ons.third_person_camera import ThirdPersonCamera
 from typing import Dict
 from tdw.controller import Controller
 from tdw.add_ons.third_person_camera import ThirdPersonCamera
-from tdw.add_ons.occlusion_manager import occlusionManager
 from tdw.add_ons.object_manager import ObjectManager
 
 # Added for video
@@ -24,29 +23,21 @@ from typing import List, Dict
 from tdw.librarian import ModelLibrarian
 from typing import Dict
 from helpers import ObjectInfo, get_random_avatar_position
+from runner_main import Runner
 
-class Occlusion(Controller):
-    def __init__(self, transition):
+class Occlusion(Runner):
+    def __init__(self):
+        self.controller_name = 'occlusion'
         lib = ModelLibrarian('models_core.json')
         self.records = lib.records
+
         # self.records = {record.name:record for record in lib.records}
         self._target_id: int = 0
-        self.transition = transition
-        # Choose if the object should come from left or right
-        self.direction = random.choice(['left', 'right'])
-        # Define the location of moving object #TODO bigger variations
-        z = random.uniform(-5, -4) if self.direction == 'left' else random.uniform(5, 4)
-        self.o_moving_loc = {"x": random.uniform(-4, -2), "y": 0, "z": z}
-        print(self.o_moving_loc)
-        # Define the z location of occluding object
-        self.o_occl_loc_z = random.uniform(-.1, .1)
-
-        print(self.o_moving_loc)
         super().__init__(port=1072)
 
-    def get_random_records(self):
+    def get_two_random_records(self):
         '''This method gets two objects, where 
-        occluder is bigger in width and height'''
+        occluder is bigger in width and height''' #TODO Choose set of suitable objects
          # Choose a random object without putting back
         records = self.records
         rec_moving = random.choice(records)
@@ -60,7 +51,6 @@ class Occlusion(Controller):
         while True:
             rec_occlu = random.choice(records)
             records.remove(rec_occlu)
-            print(rec_occlu.name)
 
             # Calculate height and width of occluder #TODO check this formula
             height_occl = abs(rec_occlu.bounds['top']['y'] - rec_occlu.bounds['bottom']['y'])
@@ -73,15 +63,15 @@ class Occlusion(Controller):
             if not records:
                 return []
             
-    def add_occ_objects(self, commands, o_id1, o_id2):
-        '''This method adds two objects to the scene, one walker and one occluder'''
-        records = []
+    def add_occ_objects(self):
+        '''This method adds two objects to the scene, one moving and one occluder'''
+        records, commands = [], []
         while not records:
-            records = self.get_random_records()
+            records = self.get_two_random_records()
 
         for i, record in enumerate(records):
-            # Moving object is o_id1 and occluder is o_id2
-            object_id = o_id1 if i == 0 else o_id2
+            # Moving object is record[0] & self.o_ids[0] and occluder is record[1] & self.o_ids[1]
+            object_id = self.o_ids[0] if i == 0 else self.o_ids[1]
             position = self.o_moving_loc if i == 0 else {"x": 0, "y": 0, "z": self.o_occl_loc_z}
             
             # Set randomized physics values and update the physics info.
@@ -100,59 +90,63 @@ class Occlusion(Controller):
                                                         static_friction=random.uniform(0, 0.9),
                                                         bounciness=random.uniform(0, 1),
                                                         scale_factor={"x": scale, "y": scale, "z": scale}))
+        return commands
     
-
-    def trial(self, path):
-        '''
-        param path: "Images will be save to here"'''
-        # Clear the list of add-ons.
-        self.add_ons.clear()
-
+    def set_camera(self):
         # Add camera
         camera = ThirdPersonCamera(position={"x": 2.5, "y": .5, "z": 0},
                            look_at={"x": 0, "y": 0, "z": 0},
                            avatar_id="occlusion")
         self.add_ons.append(camera)
- 
-        # Remove previous images and videos
-        try:
-            shutil.rmtree(f'{path}occlusion/')
-        except FileNotFoundError:
-             pass
-        
-        # Save output images/frames for video
-        self.add_ons.append(ImageCapture(path=path, avatar_ids=["occlusion"]))
-        
-        # Create room and set target framerate
-        commands = [
-            # TDWUtils.create_empty_room(12, 12), #TODO uncomment
-                    {"$type": "set_target_framerate",
-                "framerate": 30}]
-        o_id1 = self.get_unique_id()
-        o_id2 = self.get_unique_id()
 
-        self.add_occ_objects(commands, o_id1, o_id2)
+    def run_per_frame_commands(self, trial_type, tot_frames):
+        # Define standard speed and direction
+        speed = random.uniform(0.05, 0.1) if self.direction == 'left' else -random.uniform(0.05, 0.1)
 
-        self.communicate(commands)
-        
+        # Check if transition is done
+        transition_compl = False             
 
         for i in range(200):
-            self.communicate([])
+            self.o_moving_loc['z'] += speed
+            self.communicate([{"$type": "teleport_object", "position": self.o_moving_loc, "id": self.o_ids[0]}])
 
-        self.communicate({"$type": "terminate"})
+            # Check if this is object based or transition trial
+            if trial_type == 'transition':
+                # Start transition when it's behind the object #TODO: adjust for line of camera
+                if self.o_moving_loc['z'] > self.o_occl_loc_z and speed > 0 or self.o_moving_loc['z'] < self.o_occl_loc_z and speed < 0:
+                    if not transition_compl:
+                        # Choose between reverse random speed change, stop, random speed change
+                        speed = random.choice([-random.uniform(0.01, 0.2), 0, random.uniform(0.01, 0.2), -speed])                 
+                        transition_compl = True
+        
+        # Reset the scene by destroying the objects
+        destroy_commands = []
+        for o_id in self.o_ids:
+            destroy_commands.append({"$type": "destroy_object",
+                            "id": o_id})
+        destroy_commands.append({"$type": "send_rigidbodies",
+                            "frequency": "never"})
+        self.communicate(destroy_commands)
+
+    def trial_initialization_commands(self):
+        '''
+        param path: "Images will be save to here"'''
+        # Choose if the object should come from left or right
+        self.direction = random.choice(['left', 'right'])
+
+        # Define the location of moving object #TODO bigger variations
+        z = random.uniform(-5, -4) if self.direction == 'left' else random.uniform(5, 4)
+        self.o_moving_loc = {"x": random.uniform(-4, -2), "y": 0, "z": z}
+        
+        # Define the z location of occluding object
+        self.o_occl_loc_z = random.uniform(-.1, .1)
+
+        # Add objects and their ids, first id is moving object, second collider
+        self.o_ids = [self.get_unique_id(), self.get_unique_id()]
+        
+        return self.add_occ_objects()
 
 if __name__ == "__main__":
-    c = Occlusion(transition=False)
-    path = 'data/'
-    success = c.trial(path)
-    print('succes:', success)
-
-    # Change directory.
-    # chdir(str(path.joinpath("a").resolve()))
-
-    # Call ffmpeg to make video
-    call(["ffmpeg",
-        "-i", f"{path}occlusion/"+"img_%04d.jpg",
-        "-vcodec", "libx264",
-        "-pix_fmt", "yuv420p",
-        f"{path}occlusion_mees_empty_room/"+f"{random.uniform(0.01, 0.2)}.mp4"])
+    c = Occlusion()
+    success = c.run(num=5, pass_masks=['_img', '_id'], room='empty', tot_frames=150, add_slope=False, trial_type='transition')
+    print(success)

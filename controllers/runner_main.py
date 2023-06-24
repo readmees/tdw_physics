@@ -27,9 +27,9 @@ class Runner(Controller):
         for i in range(tot_frames):
                 self.communicate([])
 
+        # Reset the scene by destroying the objects
         destroy_commands = []
         for o_id in self.o_ids:
-            # Reset the scene by destroying the object.
             destroy_commands.append({"$type": "destroy_object",
                             "id": o_id})
         destroy_commands.append({"$type": "send_rigidbodies",

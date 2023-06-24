@@ -1,4 +1,4 @@
-# STATUS: Not finished
+# STATUS: V1 - Experimential
 #TODO: random turns/scales/position cube
 #TODO: add other objects then cube
 #TODO: add more rolling objects
