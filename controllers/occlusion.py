@@ -39,7 +39,7 @@ class Occlusion(Runner):
 
         # self.records = {record.name:record for record in lib.records}
         self._target_id: int = 0
-        super().__init__(port=1072)
+        super().__init__(port=1071)
 
     def get_two_random_records(self):
         '''This method gets two objects, where 
@@ -102,7 +102,7 @@ class Occlusion(Runner):
         # Add camera
         camera = ThirdPersonCamera(position={"x": 2.5, "y": .5, "z": 0},
                            look_at={"x": 0, "y": 0, "z": 0},
-                           avatar_id="occlusion")
+                           avatar_id=self.controller_name )
         self.add_ons.append(camera)
     
     def get_ob_pos(self, o_id, resp):
@@ -135,8 +135,9 @@ class Occlusion(Runner):
 
                         # Freeze object, then start 'manual' movement
                         commands.extend([{"$type": "set_rigidbody_constraints", "id": self.o_ids[0], "freeze_position_axes": {"x": 1, "y": 1, "z": 1}, "freeze_rotation_axes": {"x": 1, "y": 1, "z": 1}}])
+                    else:
                         commands.extend([{"$type": "set_rigidbody_constraints", "id": self.o_ids[0], "freeze_position_axes": {"x": 0, "y": 0, "z": 0}, "freeze_rotation_axes": {"x": 0, "y": 0, "z": 0}}])
-                    
+
                     # Start 'manual' movement
                     commands.extend([{"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[0], "absolute": True}])
                     self.communicate(commands)
@@ -197,7 +198,9 @@ class Occlusion(Runner):
         commands.append({"$type": "send_transforms",
                                   "frequency": "always"})
         return commands
+    
+
 if __name__ == "__main__":
     c = Occlusion()
-    success = c.run(num=5, pass_masks=['_img', '_id'], room='empty', tot_frames=150, add_slope=False, trial_type='transition')
+    success = c.run(num=4, pass_masks=['_img', '_id'], room='empty', tot_frames=200, add_slope=False, trial_type='transition', png=True)
     print(success)

@@ -1,4 +1,6 @@
-# Status: Not streamlined yet for new setup, very similar to containment.py on https://github.com/alters-mit/tdw_physics
+# Status: V1 Experimental
+#TODO: shaking doesn't work yet
+#TODO: freeze y-axis
 from typing import List
 from random import choice, uniform
 from tdw.tdw_utils import TDWUtils
@@ -7,8 +9,10 @@ from tdw.librarian import ModelLibrarian
 from tdw_physics.rigidbodies_dataset import RigidbodiesDataset
 from tdw_physics.physics_info import PHYSICS_INFO
 from tdw_physics.util import get_args
+from tdw.add_ons.third_person_camera import ThirdPersonCamera
 
-class Containment(RigidbodiesDataset):
+from runner_main import Runner
+class Containment(Runner):
     """
     Create a set of "Containment" trials, where a container object holds a smaller target
     object and is shaken violently, causing the target object to move around and possibly fall out.
@@ -39,6 +43,8 @@ class Containment(RigidbodiesDataset):
     def __init__(self, port: int = 1071):
         super().__init__(port=port)
 
+        self.controller_name = 'containment'
+
         for key in PHYSICS_INFO:
             # All containers have the same physics values. Set these manually.
             if key in Containment.CONTAINERS:
@@ -48,29 +54,22 @@ class Containment(RigidbodiesDataset):
         self._shake_commands: List[List[dict]] = []
         self._max_num_frames: int = 0
 
-    def get_field_of_view(self) -> float:
-        return 72
+    def set_camera(self):
+        # Add camera
+        camera = ThirdPersonCamera(position={"x": -0.625, "y": 2.0, "z": -0.7},
+                           look_at={"x": -1.0, "y": 1.0, "z": -1.5},
+                           avatar_id=self.controller_name)
+        self.add_ons.append(camera)
 
-    def get_scene_initialization_commands(self) -> List[dict]:
-        return [self.get_add_scene(scene_name="tdw_room"),
-                {"$type": "set_aperture",
-                 "aperture": 3.0},
-                {"$type": "set_focus_distance",
-                 "focus_distance": 2.25},
-                {"$type": "set_post_exposure",
-                 "post_exposure": 0.4},
-                {"$type": "set_ambient_occlusion_intensity",
-                 "intensity": 0.25},
-                {"$type": "set_ambient_occlusion_thickness_modifier",
-                 "thickness": 4.0}]
-
-    def get_trial_initialization_commands(self) -> List[dict]:
+    def trial_initialization_commands(self):
         # Teleport the avatar.
         # Look at the target aim-point.
-        commands = [{"$type": "teleport_avatar_to",
-                     "position": {"x": -0.625, "y": 2.0, "z": -0.7}},
-                    {"$type": "look_at_position",
-                     "position": {"x": -1.0, "y": 1.0, "z": -1.5}}]
+        commands = [
+            # {"$type": "teleport_avatar_to",
+            #          "position": {"x": -0.625, "y": 2.0, "z": -0.7}},
+            #         {"$type": "look_at_position",
+            #          "position": {"x": -1.0, "y": 1.0, "z": -1.5}}
+                     ]
 
         # Select a container.
         # Manually set the mass of the container.
@@ -92,6 +91,7 @@ class Containment(RigidbodiesDataset):
         o_id = self.get_unique_id()
         o_record = Controller.MODEL_LIBRARIANS["models_core.json"].get_record(object_name)
         o_scale = TDWUtils.get_unit_scale(o_record) * uniform(0.2, 0.3)
+        self.o_ids = [o_id, container_id]
         commands.extend(self.get_add_physics_object(model_name=o_record.name,
                                                     library="models_core.json",
                                                     object_id=o_id,
@@ -110,7 +110,7 @@ class Containment(RigidbodiesDataset):
                                                     scale_factor={"x": o_scale, "y": o_scale, "z": o_scale}))
         # Let the objects settle.
         commands.append({"$type": "step_physics",
-                         "frames": 50})
+                         "frames": self.framerate})
         del self._shake_commands[:]
         # Set the shake commands.
         # Shake the container.
@@ -167,17 +167,7 @@ class Containment(RigidbodiesDataset):
 
         return commands
 
-    def get_per_frame_commands(self, resp: List[bytes], frame: int) -> List[dict]:
-        # Send the next list of shake commands.
-        if len(self._shake_commands) > 0:
-            return self._shake_commands.pop(0)
-        else:
-            return []
-
-    def is_done(self, resp: List[bytes], frame: int) -> bool:
-        return frame > self._max_num_frames
-
-
 if __name__ == "__main__":
-    args = get_args("containment")
-    Containment().run(num=args.num, output_dir=args.dir, temp_path=args.temp, width=args.width, height=args.height)
+    c = Containment()
+    success = c.run(num=5, pass_masks=['_img', '_id'], room='empty', tot_frames=800, add_slope=False, trial_type='object')
+    print(success)

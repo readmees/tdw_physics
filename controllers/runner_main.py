@@ -87,7 +87,8 @@ class Runner(Controller):
             return message('pass_mask cannot contain any double masks', 'error')
         
         #TODO check input for all params
-
+        self.framerate = framerate
+        
         # Clear the list of add-ons.
         self.add_ons.clear()
 
