@@ -51,7 +51,7 @@ A lot of this code is from the [tdw_physics](https://github.com/alters-mit/tdw_p
 - Agent based trials first version
 - Chose better models
 - Make a objectshower or use the TDW objectshower
-- Implement rolling down controller
+- ~~Implement rolling down controller~~
 - Improve occlusion: don't stop behind object, but behind object in line with camera angle
-- Improve occlusion: in objectbased, use force
-- Improve containment: fix object
+- ~~Improve occlusion: in objectbased, use force~~
+- Improve containment: fix object in place
