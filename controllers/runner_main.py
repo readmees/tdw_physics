@@ -11,7 +11,7 @@ from helpers import images_to_video, message
 import time
 
 class Runner(Controller):
-    def init():
+    def __init__(self):
         super().__init__(port=1071) 
         
     def trial_initialization_commands(self):
