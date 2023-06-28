@@ -22,6 +22,22 @@ Note: internet connection needed
 
 Segmentation and other data available by specifying pass masks see: https://github.com/threedworld-mit/tdw/blob/master/Documentation/api/command_api.md#set_pass_masks
 
+## Install and run tdw_trials
+1. Create conda environment
+```
+conda create --name tdw_trials python=3.11
+conda activate tdw_trials
+```
+3. Install requirements:
+```pip install -r requirements.txt```
+4. Download TDW.app
+5. Run controller in controller folder
+```
+cd controllers
+ open TDW.app;python <controller_name>.py
+```
+5. Might have to run again:
+ ```open TDW.app;python occlusion.py```
 ## Copyright
 A lot of this code is from the [tdw_physics](https://github.com/alters-mit/tdw_physics) repository, Copyright (c) 2021 Seth Alter
 
