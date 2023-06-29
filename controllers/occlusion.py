@@ -116,7 +116,7 @@ class Occlusion(Runner):
         # Add camera
         camera = ThirdPersonCamera(position={"x": 2.5, "y": .5, "z": 0},
                            look_at={"x": 0, "y": 0, "z": 0},
-                           avatar_id=self.controller_name )
+                           avatar_id='frames_temp')
         self.add_ons.append(camera)
     
     def get_ob_pos(self, o_id, resp):

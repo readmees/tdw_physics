@@ -1,5 +1,4 @@
 # STATUS: Passing
-# One frame too many for every other mask
 from tdw.controller import Controller
 from tdw.tdw_utils import TDWUtils
 from tdw.add_ons.third_person_camera import ThirdPersonCamera
@@ -56,10 +55,13 @@ class Runner(Controller):
         return commands
     
     def set_camera(self):
+        ''' Here a custom camera can be added. 
+        The avatar_id of the camera should be 'frames_temp'
+        '''
         # Add camera
         camera = ThirdPersonCamera(position={"x": 2, "y": 1.6, "z": -1},
                            look_at={"x": 0, "y": 0, "z": 0},
-                           avatar_id=self.controller_name)
+                           avatar_id='frames_temp')
         self.add_ons.append(camera)
     
     def run(self, num=5, trial_type='object', png=False, pass_masks=["_img", "_mask"], framerate = 30, room='random', 
@@ -95,13 +97,14 @@ class Runner(Controller):
 
         # Set camera
         self.set_camera()
-        main_cam = self.controller_name
+        controller_name = self.controller_name
         
         # Define path for output data frames
         path_main = '../data'
-        paths = [f'{path_main}/{name}/{main_cam}/{trial_type}' for name in ['backgrounds', 'videos']]
+        paths = [f'{path_main}/{name}/{controller_name}/{trial_type}' for name in ['backgrounds', 'videos']]
         path_backgr, path_videos = paths
-        path_frames = f'{path_main}/frames_temp/{main_cam}'
+        path_frames = f'{path_main}/frames_temp'
+        paths.append(path_frames)
 
         # Remove previous frames (if possible) 
         #NOTE: could be more efficient, because frames folder gets recreated
@@ -120,7 +123,7 @@ class Runner(Controller):
         print(f'The random id of this set of trials will be {trial_id}')
         
         # Save 'normal' output images/frames_temp for video
-        self.add_ons.append(ImageCapture(path=path_main+'/frames_temp/', avatar_ids=[main_cam], png=png, pass_masks=pass_masks))
+        self.add_ons.append(ImageCapture(path=path_main+'/', avatar_ids=['frames_temp'], png=png, pass_masks=pass_masks))
         
         # Create room
         lib = SceneLibrarian(library="scenes.json")
@@ -152,7 +155,7 @@ class Runner(Controller):
         moved = False
         while not moved:
             try:
-                shutil.move(f'{path_frames}/img_0000{ext}', f'{path_backgr}/background_{main_cam}{trial_id}{ext}') 
+                shutil.move(f'{path_frames}/img_0000{ext}', f'{path_backgr}/background_{controller_name}{trial_id}{ext}') 
                 moved = True
             except FileNotFoundError:
                 # Scene is still loading
@@ -161,6 +164,10 @@ class Runner(Controller):
 
                 #NOTE: this might create unneccesary extra frames
                 self.communicate([])
+
+        # Remove any intial frames that might've been created
+        shutil.rmtree(path_frames)
+        os.makedirs(path_frames)
 
         print(f"Video of trial n will be saved at {path_videos}/{trial_type}/{trial_id}_trial_n.mp4")
         for trial_num in range(num):
@@ -186,6 +193,9 @@ class Runner(Controller):
             
         self.communicate({"$type": "terminate"})
 
+        # Remove temp files
+        shutil.rmtree(path_frames)
+        
         # Let the user know where the trial videos are stored
         print(f'The random id of this set of trials was {trial_id}')
         return message(f'You can now find trial n for every n at f"{path_videos}/{trial_type}/{trial_id}_trial_n.mp4"', 'success')
