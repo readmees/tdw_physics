@@ -12,7 +12,7 @@ import time
 from tdw.librarian import ModelLibrarian
 
 class Runner(Controller):
-    def __init__(self, port):
+    def __init__(self, port=1071):
         # Important to use the models_core, since the index from is based on the helpers.objects
         lib = ModelLibrarian('models_core.json')
         self.records = lib.records

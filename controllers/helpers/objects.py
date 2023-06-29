@@ -93,10 +93,10 @@ OCCLUDERS = [
     '251.cabinet_36_wall_wood_oak_white_composite',
     '252.cabinet_36_white_wood',
     '253.cabinet_36_wood_beach_honey',
-    '254.cabinet_full_height_white_wood',
-    '255.cabinet_full_height_wood_beach_honey',
-    '256.cabinet_full_height_wood_beech_honey_composite',
-    '257.cabinet_full_height_wood_oak_white_composite',
+    # '254.cabinet_full_height_white_wood', #WEIRD DOOR IS WEIRD
+    # '255.cabinet_full_height_wood_beach_honey', #WEIRD DOOR IS WEIRD
+    # '256.cabinet_full_height_wood_beech_honey_composite', #WEIRD DOOR IS WEIRD
+    # '257.cabinet_full_height_wood_oak_white_composite', #WEIRD DOOR IS WEIRD
     '195.bed01',
     '196.bed01_blue',
     '197.bed01_red',
@@ -123,7 +123,6 @@ OCCLUDED = [
     '1.102_pepsi_can_12_fl_oz_vray',
     '2.104_sprite_can_12_fl_oz_vray', #GOOD
     '3.12_06_001',
-    '12.699264_shoppingcart_2013',
     '15.868580_pliers_max2016',
     '16.9v_battery',
     '17.aaa_battery',
@@ -144,9 +143,7 @@ OCCLUDED = [
     '66.b03_pen',
     '67.b03_pen_01_001',
     '72.b03_roller_skate',
-    '73.b03_shopping_cart',
-    '74.b03_shopping_cart_walmart',
-    '75.b03_shoppingcart_2013'
+    
     '76.b03_spoon_001',
     '77.b03_toothbrush',
     '82.b04_3d_jar_180_gr_01',
@@ -156,6 +153,7 @@ OCCLUDED = [
     '282.champagne_cork',
     '259.calculator'
 ]
+    
 
 ROLLING_FLIPPED = [
     '1.102_pepsi_can_12_fl_oz_vray',
