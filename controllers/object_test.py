@@ -1,6 +1,5 @@
-# STATUS: Not finished
+# STATUS: Messy, but it works
 # Description: this file is to test which objects create bugs and which objects are fine
-# Warning: not save to run on your computer
 from tdw.controller import Controller
 from tdw.tdw_utils import TDWUtils
 from tdw.add_ons.third_person_camera import ThirdPersonCamera
@@ -11,15 +10,17 @@ import random
 import os
 from helpers import images_to_video, message
 import time
+from tdw.librarian import ModelLibrarian
 
-class Runner(Controller):
-    def init():
+
+class Object_tester(Controller):
+    def __init__(self):
+        lib = ModelLibrarian('models_core.json')
+        self.names = [record.name for record in lib.records]
+        self.records = {record.name:i for i, record in enumerate(lib.records)}
+        self.index = 129
+        self.controller_name = 'object_shower'
         super().__init__(port=1071) 
-        
-    def trial_initialization_commands(self):
-        '''In this function the objects should be added, 
-        and initial forces etc. can be applied. Should return commands'''
-        return []
 
     def run_per_frame_commands(self, trial_type, tot_frames):
         '''Communicate once for every frame
@@ -31,30 +32,13 @@ class Runner(Controller):
 
         # Reset the scene by destroying the objects
         destroy_commands = []
-        for o_id in self.o_ids:
+        # self.o_ids.append(self.slope_id)
+        for o_id in [self.slope_id]:
             destroy_commands.append({"$type": "destroy_object",
                             "id": o_id})
         destroy_commands.append({"$type": "send_rigidbodies",
                             "frequency": "never"})
         self.communicate(destroy_commands)
-    
-    def add_slope(self, commands = []):
-        '''This method adds a slope for the rolling down trials, by adding a freezed cube object'''
-        slope_id = self.get_unique_id()
-
-        commands.extend(self.get_add_physics_object(model_name="cube",
-                                                    library="models_flex.json",
-                                                    object_id=slope_id,
-                                                    rotation={"x": 0, "y": 0, "z": random.uniform(216, 244)},
-                                                    position={"x": 0, "y": 0, "z": 0}))
-        
-        # Freeze position and rotation for each axis
-        commands.extend([{"$type": "set_rigidbody_constraints", "id": slope_id, "freeze_position_axes": {"x": 1, "y": 1, "z": 1}, "freeze_rotation_axes": {"x": 1, "y": 1, "z": 1}}])
-        # Set a random color.
-        commands.append({"$type": "set_color",
-                         "color": {"r": random.random(), "g": random.random(), "b": random.random(), "a": 1.0},
-                         "id": slope_id})
-        return commands
     
     def set_camera(self):
         # Add camera
@@ -64,7 +48,7 @@ class Runner(Controller):
         self.add_ons.append(camera)
     
     def run(self, num=5, trial_type='object', png=False, pass_masks=["_img", "_mask"], framerate = 30, room='random', 
-            tot_frames=200, add_slope=False):
+            tot_frames=200):
         '''
         param num: the number of trials
         param trial_type: you can choose if you would like to run an trial object, agent or transition based
@@ -74,7 +58,6 @@ class Runner(Controller):
         param room: can be any of the specified scene names, 'empty' will create an empty room, 'random_unsafe' pick a random room which is not safe,
                     because not all rooms are tested
         param tot_frames: nummer of frames per trials
-        param add_slope: add slope to the background, for rolling down trials
         '''
         # Check if input Camera params are valid
         if not isinstance(pass_masks, list):
@@ -100,7 +83,7 @@ class Runner(Controller):
         
         # Define path for output data frames
         path_main = '../data'
-        paths = [f'{path_main}/{name}/{main_cam}' for name in ['frames_temp', 'backgrounds', 'videos']]
+        paths = [f'{path_main}/{name}/{main_cam}' for name in ['frames_temp', 'objects_screenshot', 'videos']]
         path_frames, path_backgr, path_videos = paths
 
         # Remove previous frames (if possible) 
@@ -137,65 +120,67 @@ class Runner(Controller):
         # Set target framerate
         commands.append({"$type": "set_target_framerate",
                         "framerate": framerate})
-        
-        # Add slope to the background, if param add_slope is true
-        if isinstance(add_slope, bool):
-            if add_slope:
-                commands = self.add_slope(commands)
-            self.slope_added = add_slope
-        else:
-            return message('Parameter add_slope should be of type bool', 'error')
-        
-        # Save scene/background separately
-        self.communicate(commands)
-        ext = '.png' if png else '.jpg'
-        moved = False
-        while not moved:
-            try:
-                shutil.move(f'{path_frames}/img_0000{ext}', f'{path_backgr}/background_{main_cam}{trial_id}{ext}') 
-                moved = True
-            except FileNotFoundError:
-                # Scene is still loading
-                print(message("Loading scene is taking a long time", 'warning'))
-                time.sleep(5)
-
-                #NOTE: this might create unneccesary extra frames
-                self.communicate([])
-        print(f"Video of trial n will be saved at {path_videos}/{trial_id}_trial_n.mp4")
-
+        slope_id = 1
         for trial_num in range(num):
-            # Initialize trial and return errors if something is wrong
-            trial_commands = self.trial_initialization_commands()
-            if not isinstance(trial_commands, list):
-                return trial_commands
-            self.communicate(trial_commands)
-
-            self.run_per_frame_commands(trial_type=trial_type, tot_frames=tot_frames)
+            # Show the object
+            commands.extend(self.get_add_physics_object(model_name=self.names[self.index],
+                                                    library="models_core.json",
+                                                    object_id=slope_id,
+                                                    rotation={"x": 0, "y": 0, "z": 0},
+                                                    position={"x": 0, "y": 0, "z": 0}))
             
-            # Specify the output video file name
-            output_video = f"{path_videos}/{trial_id}_trial_{trial_num}"
+            # Save screenshot of the object
+            self.communicate(commands)
+            ext = '.png' if png else '.jpg'
+            moved = False
+            while not moved:
+                try:
+                    first_frame = os.listdir(f'{path_frames}')[0]
+                    print('first', first_frame)
+                    if '.' in self.names[self.index]:
+                        return message('name cannot contain a dot for later evalutation',  'error')
+                    shutil.move(f'{path_frames}/{first_frame}', f'{path_backgr}/{self.index}.{self.names[self.index]}{ext}') 
+                    moved = True
+                except FileNotFoundError:
+                    # Scene is still loading
+                    print(message("Loading scene is taking a long time", 'warning'))
+                    time.sleep(5)
 
-            # Convert images to video
-            images_to_video(path_frames, output_video, framerate, pass_masks, png)
+                    #NOTE: this might create unneccesary extra frames
+                    self.communicate([])
+            destroy_commands = []
+            destroy_commands.append({"$type": "destroy_object",
+                            "id": slope_id})
+            destroy_commands.append({"$type": "send_rigidbodies",
+                                "frequency": "never"})  
+            self.communicate(destroy_commands)
+            print(f'{self.names[self.index]}:', self.index)
+
+            # Remove frames (this controlller is not here to make videos)
             shutil.rmtree(path_frames)
 
-            # Show progress
-            message(f'Progress trials ({trial_num+1}/{num})', 'success', round((trial_num+1)/num*10))
-            
+            # Next object
+            self.index +=1 
+            commands = []
         self.communicate({"$type": "terminate"})
 
         # Let the user know where the trial videos are stored
-        print(f'The random id of this set of trials was {trial_id}')
         return message(f'You can now find trial n for every n at f"{path_videos}/{trial_id}_trial_n.mp4"', 'success')
     
     
 if __name__ == "__main__":
-    print(message('This program is not save to run, because of try, except without error specification', 'warning'))
-    user_input = ''
-    while user_input.lower() not in ['y', 'n', 'no', 'yes']:
-        print(message('Would you like to continue anyways? (yes/no)', 'error'))
-        user_input = input()
+    # print(message('This program is not save to run, because of try, except without error specification', 'warning'))
+    # user_input = ''
+    # while user_input.lower() not in ['y', 'n', 'no', 'yes']:
+    #     print(message('Would you like to continue anyways? (yes/no)', 'error'))
+    #     user_input = input()
+    # if user_input in ['y', 'yes']:
+    #     print(message('Unsave program will run', 'warning'))
+    #     c = Object_tester()
+    #     success = c.run(num=200, pass_masks=['_img'], room='empty', tot_frames=5, png=False)
+    #     print(success)
+    # print(message('Program aborted', 'success'))
 
-    c = Collision()
-    success = c.run(num=3, pass_masks=['_img'], room='empty', add_slope=False, tot_frames=100, png=False)
+    c = Object_tester()
+    success = c.run(num=200, pass_masks=['_img'], room='empty', tot_frames=5, png=False)
     print(success)
