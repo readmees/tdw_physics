@@ -171,7 +171,7 @@ class Runner(Controller):
             self.run_per_frame_commands(trial_type=trial_type, tot_frames=tot_frames)
             
             # Specify the output video file name
-            output_video = f"{path_videos}/{trial_id}_trial_{trial_num}"
+            output_video = f"{path_videos}/{trial_type}/{trial_id}_trial_{trial_num}"
 
             # Convert images to video
             images_to_video(path_frames, output_video, framerate, pass_masks, png)
@@ -184,7 +184,7 @@ class Runner(Controller):
 
         # Let the user know where the trial videos are stored
         print(f'The random id of this set of trials was {trial_id}')
-        return message(f'You can now find trial n for every n at f"{path_videos}/{trial_id}_trial_n.mp4"', 'success')
+        return message(f'You can now find trial n for every n at f"{path_videos}/{trial_type}/{trial_id}_trial_n.mp4"', 'success')
 
 if __name__ == "__main__":
     c = Runner()
