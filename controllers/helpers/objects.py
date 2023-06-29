@@ -31,7 +31,7 @@ CONTAINED = [
     '19.alarm_clock',
     '23.apple',
     '24.apple_ipod_touch_grey_vray',
-    '36.atmosphere_nodo',
+    # '36.atmosphere_nodo', # NOT GOOD
     '45.b03_banana_01_high',
     '47.b03_beats_solo_hd_headphone_03_2010',
     '49.b03_burger',
@@ -121,17 +121,17 @@ OCCLUDERS_SEE_THROUGH = [
 OCCLUDED = [
     '0.034_vray',
     '1.102_pepsi_can_12_fl_oz_vray',
-    '2.104_sprite_can_12_fl_oz_vray',
+    '2.104_sprite_can_12_fl_oz_vray', #GOOD
     '3.12_06_001',
     '12.699264_shoppingcart_2013',
     '15.868580_pliers_max2016',
     '16.9v_battery',
     '17.aaa_battery',
-    '18.afl_lamp',
+    '18.afl_lamp', #GOOD
     '19.alarm_clock',
     '23.apple',
     '24.apple_ipod_touch_grey_vray',
-    '36.atmosphere_nodo',
+    # '36.atmosphere_nodo', #NOT GOOD
     '45.b03_banana_01_high',
     '47.b03_beats_solo_hd_headphone_03_2010',
     '49.b03_burger',
@@ -178,32 +178,11 @@ BALLS = [
     '75.b03_shoppingcart_2013'
 ]
 
-CONTAINERS = [
-    '41.b03_696615_object001',
-    '46.b03_basket',
-    '88.b04_basket',
-    '94.b04_bowl_smooth',
-    '317.elephant_bowl',
-    '299.cup',  # Tiny
-    '295.coffeemug',
-    '293.coffeecup004',
-    '294.coffeecup004_fix',
-    '215.box_18inx18inx12in_cardboard',
-    '216.box_24inx18inx12in_cherry',
-    '217.box_tapered_beech',
-    '218.box_tapered_white_mesh',
-    '188.basket_18inx18inx12iin',
-    '189.basket_18inx18inx12iin_bamboo',
-    '190.basket_18inx18inx12iin_plastic_lattice',
-    '191.basket_18inx18inx12iin_wicker',
-    '192.basket_18inx18inx12iin_wood_mesh'
-]
-
-
 FAULTY = [
     '128.b04_wallmounted_soap_dispenser_composite'
 ]
 
+# Create dictionaries of list with name:index for key:value
 CONTAINERS_DICT = {
     item.split('.')[1]: int(item.split('.')[0])
     for item in CONTAINERS
@@ -243,3 +222,13 @@ FAULTY_DICT = {
     item.split('.')[1]: int(item.split('.')[0])
     for item in FAULTY
 }
+
+# Create lists without index
+CONTAINERS = [item.split('.')[1] for item in CONTAINERS] 
+CONTAINED = [item.split('.')[1] for item in CONTAINED] 
+OCCLUDERS = [item.split('.')[1] for item in OCCLUDERS] 
+OCCLUDERS_SEE_THROUGH = [item.split('.')[1] for item in OCCLUDERS_SEE_THROUGH] 
+OCCLUDED = [item.split('.')[1] for item in OCCLUDED] 
+ROLLING_FLIPPED = [item.split('.')[1] for item in ROLLING_FLIPPED] 
+BALLS = [item.split('.')[1] for item in BALLS] 
+FAULTY = [item.split('.')[1] for item in FAULTY] 

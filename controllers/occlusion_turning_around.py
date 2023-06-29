@@ -8,6 +8,7 @@ from tdw.output_data import OutputData, Transforms, IdPassSegmentationColors
 from tdw_physics.rigidbodies_dataset import RigidbodiesDataset
 from tdw_physics.util import get_args
 
+from helpers.runner_main import Runner
 
 class Permanence(RigidbodiesDataset):
     """

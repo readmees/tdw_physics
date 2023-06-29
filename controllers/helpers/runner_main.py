@@ -1,4 +1,5 @@
 # STATUS: Passing
+# One frame too many for every other mask
 from tdw.controller import Controller
 from tdw.tdw_utils import TDWUtils
 from tdw.add_ons.third_person_camera import ThirdPersonCamera
@@ -7,12 +8,12 @@ from tdw.librarian import SceneLibrarian
 import shutil
 import random   
 import os
-from helpers import images_to_video, message
+from helpers.helpers import images_to_video, message
 import time
 
 class Runner(Controller):
-    def __init__(self):
-        super().__init__(port=1071) 
+    # def __init__(self):
+    #     super().__init__(port=1071) 
         
     def trial_initialization_commands(self):
         '''In this function the objects should be added, 
@@ -98,8 +99,9 @@ class Runner(Controller):
         
         # Define path for output data frames
         path_main = '../data'
-        paths = [f'{path_main}/{name}/{main_cam}' for name in ['frames_temp', 'backgrounds', 'videos']]
-        path_frames, path_backgr, path_videos = paths
+        paths = [f'{path_main}/{name}/{main_cam}/{trial_type}' for name in ['backgrounds', 'videos']]
+        path_backgr, path_videos = paths
+        path_frames = f'{path_main}/frames_temp/{main_cam}'
 
         # Remove previous frames (if possible) 
         #NOTE: could be more efficient, because frames folder gets recreated
@@ -159,8 +161,8 @@ class Runner(Controller):
 
                 #NOTE: this might create unneccesary extra frames
                 self.communicate([])
-        print(f"Video of trial n will be saved at {path_videos}/{trial_id}_trial_n.mp4")
 
+        print(f"Video of trial n will be saved at {path_videos}/{trial_type}/{trial_id}_trial_n.mp4")
         for trial_num in range(num):
             # Initialize trial and return errors if something is wrong
             trial_commands = self.trial_initialization_commands()
@@ -171,9 +173,11 @@ class Runner(Controller):
             self.run_per_frame_commands(trial_type=trial_type, tot_frames=tot_frames)
             
             # Specify the output video file name
-            output_video = f"{path_videos}/{trial_type}/{trial_id}_trial_{trial_num}"
+            output_video = f"{path_videos}/{trial_id}_trial_{trial_num}"
 
-            # Convert images to video
+            # Convert images to videos
+            print(path_frames)
+            print(output_video)
             images_to_video(path_frames, output_video, framerate, pass_masks, png)
             shutil.rmtree(path_frames)
 

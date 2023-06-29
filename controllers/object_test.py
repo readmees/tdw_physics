@@ -8,7 +8,7 @@ from tdw.librarian import SceneLibrarian
 import shutil
 import random   
 import os
-from helpers import images_to_video, message
+from helpers.helpers import images_to_video, message
 import time
 from tdw.librarian import ModelLibrarian
 

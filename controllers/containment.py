@@ -11,7 +11,7 @@ from tdw_physics.physics_info import PHYSICS_INFO
 from tdw_physics.util import get_args
 from tdw.add_ons.third_person_camera import ThirdPersonCamera
 
-from runner_main import Runner
+from helpers.runner_main import Runner
 class Containment(Runner):
     """
     Create a set of "Containment" trials, where a container object holds a smaller target

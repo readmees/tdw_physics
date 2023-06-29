@@ -21,11 +21,12 @@ import random
 
 
 # From &tdw_physics
-from typing import List, Dict
 from tdw.librarian import ModelLibrarian
-from typing import Dict
-from helpers.helpers import ObjectInfo, get_random_avatar_position
+
+
 from helpers.runner_main import Runner
+
+from helpers.objects import *
 
 
 # To keep track of where the moving objects is
@@ -45,10 +46,14 @@ class Occlusion(Runner):
     def get_two_random_records(self):
         '''This method gets two objects, where 
         occluder is bigger in width and height''' #TODO Choose set of suitable objects
-         # Choose a random object without putting back
-        records = self.records
-        rec_moving = random.choice(records)
-        records.remove(rec_moving)
+        # Store globals in locals, so we can remove objects temporary
+        occluded, occluders = OCCLUDED.copy(), OCCLUDERS.copy()
+        
+        # Choose a random occluded object
+        o_moving_name = random.choice(occluded)
+        print(o_moving_name)
+        # Get record of moving object
+        rec_moving = self.records[OCCLUDED_DICT[o_moving_name]]
 
         # Get height and width of moving object #TODO check this formula
         height_moving = abs(rec_moving.bounds['top']['y'] - rec_moving.bounds['bottom']['y'])
@@ -56,23 +61,31 @@ class Occlusion(Runner):
 
         # Make sure the occluding object covers the other object
         while True:
-            rec_occlu = random.choice(records)
-            records.remove(rec_occlu)
+            # Choose a random occluder object without putting back
+            o_occlu_name = random.choice(occluders)
+            print(occluders)
+            occluders.remove(o_occlu_name)
+            
+            # Get record of moving object
+            rec_occlu = self.records[OCCLUDERS_DICT[o_occlu_name]]
 
             # Calculate height and width of occluder #TODO check this formula
             height_occl = abs(rec_occlu.bounds['top']['y'] - rec_occlu.bounds['bottom']['y'])
             width_occl = abs(rec_occlu.bounds['left']['z'] - rec_occlu.bounds['right']['z'])
 
+            return [rec_moving, rec_occlu]
             if height_occl > height_moving and width_occl>width_moving:
                 return [rec_moving, rec_occlu]
             
             # If none of records is bigger then moving object
-            if not records:
+            if not occluders:
                 return []
             
     def add_occ_objects(self):
         '''This method adds two objects to the scene, one moving and one occluder'''
         records, commands = [], []
+
+        # There might a occluding object that is bigger then any occluders, in this case try again
         while not records:
             records = self.get_two_random_records()
 
@@ -190,7 +203,7 @@ class Occlusion(Runner):
         
         # Apply force
         commands.append({"$type": "apply_force_magnitude_to_object",
-                          "magnitude": random.uniform(20, 60),
+                          "magnitude": random.uniform(30, 60),
                           "id": moving_o_id})
         
         #TODO Make sure objects cannot fly or even bounce  maybe this is not necessary with the right objects
@@ -203,5 +216,5 @@ class Occlusion(Runner):
 
 if __name__ == "__main__":
     c = Occlusion()
-    success = c.run(num=4, pass_masks=['_img', '_id'], room='empty', tot_frames=200, add_slope=False, trial_type='transition', png=True)
+    success = c.run(num=4, pass_masks=['_img', '_id'], room='empty', tot_frames=150, add_slope=False, trial_type='transition', png=True)
     print(success)

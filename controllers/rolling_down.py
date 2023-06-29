@@ -26,7 +26,7 @@ import random
 from typing import List, Dict
 from tdw.librarian import ModelLibrarian
 from typing import Dict
-from helpers import ObjectInfo, get_random_avatar_position
+from helpers.helpers import ObjectInfo, get_random_avatar_position
 
 from tdw.controller import Controller
 from tdw.tdw_utils import TDWUtils
@@ -42,7 +42,7 @@ from os import chdir, system
 from subprocess import call
 import shutil
 
-from helpers import message
+from helpers.helpers import message
 
 # Added for Slopes
 import random
@@ -52,9 +52,9 @@ import numpy as np
 from typing import List, Dict
 from tdw.librarian import ModelLibrarian
 from typing import Dict
-from helpers import ObjectInfo, get_random_avatar_position
+from helpers.helpers import ObjectInfo, get_random_avatar_position
 
-from runner_main import Runner
+from helpers.runner_main import Runner
 
 
 class Slope(Runner):
