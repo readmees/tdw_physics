@@ -60,7 +60,7 @@ OCCLUDERS = [
     '7.36_in_wall_cabinet_wood_beach_honey',
     '27.appliance-ge-profile-microwave',
     '28.appliance-ge-profile-microwave3',
-    '31.aquostv',
+    # '31.aquostv', #Flipped
     '34.arflex_strips_sofa',
     '48.b03_bosch_cbg675bs1b_2013__vray_composite',
     '53.b03_db_apps_tech_08_04_composite',

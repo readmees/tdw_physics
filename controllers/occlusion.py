@@ -1,43 +1,22 @@
 # STATUS: V1 - Experimential
-#TODO choose objects manually
-#TODO something seems to go wrong with scale
-from tdw.controller import Controller
+#TODO test new stopping math
 from tdw.tdw_utils import TDWUtils
 from tdw.add_ons.third_person_camera import ThirdPersonCamera
 from typing import Dict
-from tdw.controller import Controller
 from tdw.add_ons.third_person_camera import ThirdPersonCamera
-from tdw.add_ons.object_manager import ObjectManager
-
-# Added for video
-from tdw.add_ons.image_capture import ImageCapture
-from tdw.backend.paths import EXAMPLE_CONTROLLER_OUTPUT_PATH
-from os import chdir, system
-from subprocess import call
-import shutil
 
 # Added for occlusions
 import random
-
-
-# From &tdw_physics
-from tdw.librarian import ModelLibrarian
-
-
 from helpers.runner_main import Runner
-
 from helpers.objects import *
-
 
 # To keep track of where the moving objects is
 from tdw.output_data import Transforms, OutputData
-
+import numpy as np
 class Occlusion(Runner):
     def __init__(self):
         self.controller_name = 'occlusion'
-
-        lib = ModelLibrarian('models_core.json')
-        self.records = lib.records
+        self.camera_pos = {"x": 2.5, "y": .5, "z": 0}
 
         # self.records = {record.name:record for record in lib.records}
         self._target_id: int = 0
@@ -112,12 +91,25 @@ class Occlusion(Runner):
                                                         scale_factor={"x": scale, "y": scale, "z": scale}))
         return commands
     
+    def calc_stopping_pos(self):
+        ''' This function calculates the stopping position of the moving object, 
+        so it's in line with the occluder vs camera
+        using a**2+b**2=c**2'''
+        a_mo_oc = np.abs(self.o_moving_loc['x'])+np.abs(self.camera_pos['x'])
+        b_mo_oc = np.abs(self.o_occl_loc_z) + np.abs(self.camera_pos['z']) 
+
+        c_mo_oc = np.sqrt(a_mo_oc**2+b_mo_oc**2)
+        c_co = np.sqrt(self.camera_pos['z']**2 + self.camera_pos['x']**2)
+        c_mo = c_mo_oc-c_co
+        b_mo = c_mo**2-self.o_moving_loc['x']**2
+        return b_mo # if self.o_occl_loc_z >= 0 else -b_mo 
+    
     def set_camera(self):
         # Add camera
-        camera = ThirdPersonCamera(position={"x": 2.5, "y": .5, "z": 0},
+        self.camera = ThirdPersonCamera(position=self.camera_pos,
                            look_at={"x": 0, "y": 0, "z": 0},
                            avatar_id='frames_temp')
-        self.add_ons.append(camera)
+        self.add_ons.append(self.camera)
     
     def get_ob_pos(self, o_id, resp):
         '''Get object position'''
@@ -136,11 +128,12 @@ class Occlusion(Runner):
         # Check if transition is done
         transition_compl = False             
 
+        stop_z = self.calc_stopping_pos()
         for i in range(tot_frames):
             # Check if this is object based or transition trial
             if trial_type == 'transition':
                 # Start transition when it's behind the object #TODO: adjust for line of camera
-                if self.o_moving_loc['z'] > self.o_occl_loc_z and self.direction == 'left' or self.o_moving_loc['z'] < self.o_occl_loc_z and self.direction == 'right':
+                if self.o_moving_loc['z'] > stop_z and self.direction == 'left' or self.o_moving_loc['z'] < stop_z and self.direction == 'right':
                     commands = []
                     if not transition_compl:
                         # Choose between reverse random speed change, stop, random speed change
@@ -187,7 +180,10 @@ class Occlusion(Runner):
         self.o_moving_loc = {"x": random.uniform(-4, -2), "y": 0, "z": z}
         
         # Define the z location of occluding object
-        self.o_occl_loc_z = random.uniform(-.1, .1)
+        self.o_occl_loc_z = random.uniform(-.5, .5)
+
+        # Rotate camera to occluding object
+        self.camera.rotate({"x": 0, "y": 0, "z":self.o_occl_loc_z})
 
         # Add objects and their ids, first id is moving object, second collider
         self.o_ids = [self.get_unique_id(), self.get_unique_id()]
@@ -216,5 +212,5 @@ class Occlusion(Runner):
 
 if __name__ == "__main__":
     c = Occlusion()
-    success = c.run(num=4, pass_masks=['_img', '_id'], room='empty', tot_frames=150, add_slope=False, trial_type='transition', png=True)
+    success = c.run(num=8, pass_masks=['_img'], room='empty', tot_frames=150, add_slope=False, trial_type='transition', png=True)
     print(success)

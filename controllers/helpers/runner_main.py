@@ -9,10 +9,15 @@ import random
 import os
 from helpers.helpers import images_to_video, message
 import time
+from tdw.librarian import ModelLibrarian
 
 class Runner(Controller):
-    # def __init__(self):
-    #     super().__init__(port=1071) 
+    def __init__(self, port):
+        # Important to use the models_core, since the index from is based on the helpers.objects
+        lib = ModelLibrarian('models_core.json')
+        self.records = lib.records
+
+        super().__init__(port=port) 
         
     def trial_initialization_commands(self):
         '''In this function the objects should be added, 
