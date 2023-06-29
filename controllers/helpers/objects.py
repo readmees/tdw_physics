@@ -118,6 +118,45 @@ OCCLUDERS_SEE_THROUGH = [
     '75.b03_shoppingcart_2013'
 ]
 
+OCCLUDED = [
+    '0.034_vray',
+    '1.102_pepsi_can_12_fl_oz_vray',
+    '2.104_sprite_can_12_fl_oz_vray',
+    '3.12_06_001',
+    '12.699264_shoppingcart_2013',
+    '15.868580_pliers_max2016',
+    '16.9v_battery',
+    '17.aaa_battery',
+    '18.afl_lamp',
+    '19.alarm_clock',
+    '23.apple',
+    '24.apple_ipod_touch_grey_vray',
+    '36.atmosphere_nodo',
+    '45.b03_banana_01_high',
+    '47.b03_beats_solo_hd_headphone_03_2010',
+    '49.b03_burger',
+    '50.b03_cocacola_can_cage',
+    '56.b03_dollarstack',
+    '57.b03_hair_comb_2010',
+    '58.b03_iron_candle_vray',
+    '61.b03_loafbread',
+    '65.b03_padlock',
+    '66.b03_pen',
+    '67.b03_pen_01_001',
+    '72.b03_roller_skate',
+    '73.b03_shopping_cart',
+    '74.b03_shopping_cart_walmart',
+    '75.b03_shoppingcart_2013'
+    '76.b03_spoon_001',
+    '77.b03_toothbrush',
+    '82.b04_3d_jar_180_gr_01',
+    '90.b04_bottle-2014-2018',
+    '91.b04_bottle_20ml',
+    '284.chocolate_bar001',
+    '282.champagne_cork',
+    '259.calculator'
+]
+
 ROLLING_FLIPPED = [
     '1.102_pepsi_can_12_fl_oz_vray',
     '2.104_sprite_can_12_fl_oz_vray',
@@ -139,41 +178,68 @@ BALLS = [
     '75.b03_shoppingcart_2013'
 ]
 
+CONTAINERS = [
+    '41.b03_696615_object001',
+    '46.b03_basket',
+    '88.b04_basket',
+    '94.b04_bowl_smooth',
+    '317.elephant_bowl',
+    '299.cup',  # Tiny
+    '295.coffeemug',
+    '293.coffeecup004',
+    '294.coffeecup004_fix',
+    '215.box_18inx18inx12in_cardboard',
+    '216.box_24inx18inx12in_cherry',
+    '217.box_tapered_beech',
+    '218.box_tapered_white_mesh',
+    '188.basket_18inx18inx12iin',
+    '189.basket_18inx18inx12iin_bamboo',
+    '190.basket_18inx18inx12iin_plastic_lattice',
+    '191.basket_18inx18inx12iin_wicker',
+    '192.basket_18inx18inx12iin_wood_mesh'
+]
+
+
 FAULTY = [
     '128.b04_wallmounted_soap_dispenser_composite'
 ]
 
-CONTAINERS = {
+CONTAINERS_DICT = {
     item.split('.')[1]: int(item.split('.')[0])
     for item in CONTAINERS
 }
 
-CONTAINED = {
+CONTAINED_DICT = {
     item.split('.')[1]: int(item.split('.')[0])
     for item in CONTAINED
 }
 
-OCCLUDERS = {
+OCCLUDERS_DICT = {
     item.split('.')[1]: int(item.split('.')[0])
     for item in OCCLUDERS
 }
 
-OCCLUDERS_SEE_THROUGH = {
+OCCLUDERS_SEE_THROUGH_DICT = {
     item.split('.')[1]: int(item.split('.')[0])
     for item in OCCLUDERS_SEE_THROUGH
 }
 
-ROLLING_FLIPPED = {
+OCCLUDED_DICT = {
+    item.split('.')[1]: int(item.split('.')[0])
+    for item in OCCLUDED
+}
+
+ROLLING_FLIPPED_DICT = {
     item.split('.')[1]: int(item.split('.')[0])
     for item in ROLLING_FLIPPED
 }
 
-BALLS = {
+BALLS_DICT = {
     item.split('.')[1]: int(item.split('.')[0])
     for item in BALLS
 }
 
-FAULTY = {
+FAULTY_DICT = {
     item.split('.')[1]: int(item.split('.')[0])
     for item in FAULTY
 }
