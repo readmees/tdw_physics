@@ -18,7 +18,7 @@ import random
 
 # Added for collisions
 
-from runner_main import Runner
+from helpers.runner_main import Runner
 
 class Collision(Runner):
     def collision_fall(self, commands, o_id1, o_id2):

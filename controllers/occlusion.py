@@ -24,8 +24,9 @@ import random
 from typing import List, Dict
 from tdw.librarian import ModelLibrarian
 from typing import Dict
-from helpers import ObjectInfo, get_random_avatar_position
-from runner_main import Runner
+from helpers.helpers import ObjectInfo, get_random_avatar_position
+from helpers.runner_main import Runner
+
 
 # To keep track of where the moving objects is
 from tdw.output_data import Transforms, OutputData

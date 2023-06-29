@@ -1,4 +1,6 @@
-data/*
+data/videos/*
+data/frames_temp/*
+data/backgrounds/*
 TDW.app
 __pycache__/*
 controllers/__pycache__/*
