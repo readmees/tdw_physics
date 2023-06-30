@@ -62,7 +62,7 @@ OCCLUDERS = [
     '28.appliance-ge-profile-microwave3',
     # '31.aquostv', #Flipped
     '34.arflex_strips_sofa',
-    '48.b03_bosch_cbg675bs1b_2013__vray_composite',
+    # '48.b03_bosch_cbg675bs1b_2013__vray_composite', #Opens in weird way
     '53.b03_db_apps_tech_08_04_composite',
     '55.b03_db_apps_tech_08_08_composite',
     '59.b03_ka90ivi20r_2013__vray',

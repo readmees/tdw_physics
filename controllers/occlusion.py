@@ -104,7 +104,7 @@ class Occlusion(Runner):
         c_co = np.sqrt(self.camera_pos['z']**2 + self.camera_pos['x']**2)
         c_mo = c_mo_oc-c_co
         b_mo = c_mo**2-self.o_moving_loc['x']**2
-        return b_mo # if self.o_occl_loc_z >= 0 else -b_mo 
+        return b_mo if self.camera_pos['z'] <= 0 else -b_mo 
     
     def set_camera(self):
         # Add camera
@@ -138,6 +138,12 @@ class Occlusion(Runner):
                 if self.o_moving_loc['z'] > stop_z and self.direction == 'left' or self.o_moving_loc['z'] < stop_z and self.direction == 'right':
                     commands = []
                     if not transition_compl:
+                        print('stop_z', stop_z)
+                        print('cam', self.camera_pos)
+                        print('moving postiion', self.o_moving_loc)
+                        print('occluder', self.o_occl_loc_z)
+
+
                         # Choose between reverse random speed change, stop, random speed change
                         speed = random.choice([-random.uniform(0.01, 0.2), 0, random.uniform(0.01, 0.2)])                 
                         transition_compl = True
@@ -219,7 +225,7 @@ class Occlusion(Runner):
 
 if __name__ == "__main__":
     c = Occlusion()
-    success = c.run(num=300, pass_masks=['_img', '_id'], room='empty', tot_frames=150, add_slope=False, trial_type='object', png=False)
+    success = c.run(num=300, pass_masks=['_img', '_id'], room='empty', tot_frames=150, add_slope=False, trial_type='transition', png=False)
     # The following code only works for other masks then _img
     # for i in range(30):
     #     c = Occlusion(port=1000+i)
