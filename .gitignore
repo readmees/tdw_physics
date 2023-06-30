@@ -4,3 +4,5 @@ data/backgrounds/*
 TDW.app
 __pycache__/*
 controllers/__pycache__/*
+controllers/helpers/__pycache__/*
+.DS_Store
