@@ -1,9 +1,13 @@
 # STATUS: V1 - Experimential
-#TODO test new stopping math
-from tdw.tdw_utils import TDWUtils
+'''
+The scales of the objects are random
+The rotation of the objects is random
+The height and distance of the camera is random for every trial
+The camera is always the same perpendicular z distance from the x axis as the same from the moving object
+The occluder is always on the y and z are always 0 for the occluder
+'''
 from tdw.add_ons.third_person_camera import ThirdPersonCamera
 from typing import Dict
-from tdw.add_ons.third_person_camera import ThirdPersonCamera
 
 # Added for occlusions
 import random
@@ -16,6 +20,7 @@ from tdw.output_data import Transforms, OutputData
 from tdw.librarian import ModelLibrarian
 import numpy as np
 
+from tdw.object_data.object_static import ObjectStatic
 class Occlusion(Runner):
     def __init__(self, port=1071):
         self.controller_name = 'occlusion'
@@ -60,11 +65,11 @@ class Occlusion(Runner):
 
             #NOTE TODO Somehow width is often 0
             if height_occl > height_moving:
-                return [rec_moving, rec_occlu]
+                return [rec_moving, rec_occlu], height_occl
             
             # If none of records is bigger then moving object
             if not occluders:
-                return []
+                return [], height_occl
             
     def add_occ_objects(self):
         '''This method adds two objects to the scene, one moving and one occluder'''
@@ -72,47 +77,28 @@ class Occlusion(Runner):
 
         # There might a occluding object that is bigger then any occluders, in this case try again
         while not records:
-            records = self.get_two_random_records()
+            records, height_occl = self.get_two_random_records()
         self.names = [record.name for record in records]
         for i, record in enumerate(records):
             # Moving object is record[0] & self.o_ids[0] and occluder is record[1] & self.o_ids[1]
             object_id = self.o_ids[0] if i == 0 else self.o_ids[1]
             position = self.o_moving_loc if i == 0 else {"x": 0, "y": 0, "z": self.o_occl_loc_z}
             
-            # Set randomized physics values and update the physics info.
-            scale = TDWUtils.get_unit_scale(record) * random.uniform(0.89, 1.01)
+            # If moving object
+            if i == 0:
+                print(record.mass)
+            # Set randomized physics values and update the physics info. #NOTE this is done incorrectly in tdw_physics with TDWUtils.get_unit_scale
+            scale = random.uniform(0.9, 1.1)
 
             # Add object
             commands.extend(self.get_add_physics_object(model_name=record.name,
                                                         library="models_core.json",
                                                         object_id=object_id,
                                                         position=position,
-                                                        # rotation={"x": 0, "y": random.uniform(-90, 90), "z": 0},
-                                                        default_physics_values=False,
-                                                        mass=random.uniform(1, 5),
-                                                        scale_mass=False,
-                                                        dynamic_friction=random.uniform(0, 0.9),
-                                                        static_friction=random.uniform(0, 0.9),
-                                                        bounciness=random.uniform(0, 1),
-                                                        scale_factor={"x": scale, "y": scale, "z": scale} #TODO uncomment for random scale
+                                                        rotation={"x": 0, "y": random.uniform(-90, 90), "z": 0},
+                                                        scale_factor={"x": scale, "y": scale, "z": scale} 
                                                         ))
-        return commands
-    
-    def calc_stopping_pos(self):
-        ''' This function calculates the stopping position of the moving object, 
-        so it's in line with the occluder vs camera
-        using a**2+b**2=c**2'''
-        a_mo_oc = np.abs(self.o_moving_loc['x'])+np.abs(self.camera_pos['x'])
-        b_mo_oc = np.abs(self.o_occl_loc_z)+np.abs(self.camera_pos['z']) 
-
-        c_mo_oc = np.sqrt(a_mo_oc**2+b_mo_oc**2)
-        c_co = np.sqrt(self.camera_pos['z']**2 + self.camera_pos['x']**2)
-        
-        c_mo = c_mo_oc-c_co
-
-        a_mo = self.o_moving_loc['x']
-        b_mo = np.sqrt(c_mo**2 - a_mo**2)
-        return b_mo
+        return commands, height_occl
     
     def set_camera(self):
         # Add camera
@@ -138,25 +124,27 @@ class Occlusion(Runner):
         # Check if transition is done
         transition_compl = False             
         
-        # Calculate z distance from occluder
-        stop_z = self.calc_stopping_pos()
+        # Calculate z distance between occluder and camera
+        stop_moving = np.abs(self.o_occl_loc_z - self.camera_pos['z'])
+
 
         # If occluder is on the left of the camera, moving object should stop on the right and vice versa
         if self.camera_pos['z'] > self.o_occl_loc_z:
             print('camera is on the right of occluder, object stops on the left of occluder') 
-            stop_z = self.o_occl_loc_z - stop_z
+            stop_moving = self.o_occl_loc_z - stop_moving
         else:
-            print('camera is on the left of occluder, object stops on the right of occluder')# Works
-            stop_z = self.o_occl_loc_z + stop_z
+            print('camera is on the left of occluder, object stops on the right of occluder')
+            stop_moving = self.o_occl_loc_z + stop_moving
 
         # stop_z = stop_z + self.o_occl_loc_z # if stop_z >= 0 else stop_z - self.o_occl_loc_z
         for i in range(tot_frames):
             # Check if this is object based or transition trial
             if trial_type == 'transition':
                 # Start transition when it's behind the object #TODO: adjust for line of camera
-                if self.o_moving_loc['z'] > stop_z and self.direction == 'left' or self.o_moving_loc['z'] < stop_z and self.direction == 'right':
+                if self.o_moving_loc['z'] > stop_moving and self.direction == 'left' or self.o_moving_loc['z'] < stop_moving and self.direction == 'right':
                     commands = []
                     if not transition_compl:
+                        print('transitiontime')
                         # Choose between reverse random speed change, stop
                         speed = random.choice([random.uniform(0.01, 0.3), 0])
                         speed = speed if self.direction == 'right' or speed == 0 else -speed                
@@ -206,18 +194,22 @@ class Occlusion(Runner):
         # Define the z location of occluding object
         self.o_occl_loc_z = random.uniform(-.5, .5)
 
-        # Rotate camera to occluding object
-        # #TODO change height depending on height objects
-        # self.camera_pos = {"x": random.uniform(2, 3), "y": random.uniform(.2,.3), "z": random.uniform(-1, 1)}
-        # self.camera.teleport(position=self.camera_pos)
-
-        self.camera.rotate({"x": 0, "y": 0, "z":self.o_occl_loc_z})
-
-
         # Add objects and their ids, first id is moving object, second collider
         self.o_ids = [self.get_unique_id(), self.get_unique_id()]
         moving_o_id = self.o_ids[0]
-        commands = self.add_occ_objects()
+        commands, height_occl = self.add_occ_objects()
+
+        # Teleport camera same distance from occluder as moving object
+        #TODO change height depending on height objects
+        #TODO check if moving camera creates problems
+        self.camera_pos['x'] = -self.o_moving_loc['x']
+
+        # Float somewhere between the ground and occluder height
+        self.camera_pos['y'] = random.uniform(0, height_occl)
+        self.camera.teleport(position=self.camera_pos)
+
+        # Rotate camera to occluding object
+        self.camera.rotate({"x": 0, "y": 0, "z":self.o_occl_loc_z})
 
         # Apply point object towards middle (but behind occluder) #TODO does not account for scale of object
         commands.append({"$type": "object_look_at_position", 

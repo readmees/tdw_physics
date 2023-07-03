@@ -61,14 +61,14 @@ OCCLUDERS = [
     '27.appliance-ge-profile-microwave',
     '28.appliance-ge-profile-microwave3',
     # '31.aquostv', #Flipped
-    '34.arflex_strips_sofa',
+    # '34.arflex_strips_sofa', #SCALE too large
     # '48.b03_bosch_cbg675bs1b_2013__vray_composite', #Opens in weird way
     '53.b03_db_apps_tech_08_04_composite',
     '55.b03_db_apps_tech_08_08_composite',
     '59.b03_ka90ivi20r_2013__vray',
     '310.dishwasher_4_composite',
     '318.elf_painting',
-    '285.club_house_italia_nautilus_sofa',
+    # '285.club_house_italia_nautilus_sofa', #SCALE too large
     '286.coffee_001',
     '287.coffee_0023',
     '288.coffee_005_13',
