@@ -222,7 +222,7 @@ class Occlusion(Runner):
         
         # Apply force
         commands.append({"$type": "apply_force_magnitude_to_object",
-                          "magnitude": random.uniform(30, 60),
+                          "magnitude": random.uniform(30, 40),
                           "id": moving_o_id})
         
         #TODO Make sure objects cannot fly or even bounce  maybe this is not necessary with the right objects
@@ -237,7 +237,7 @@ class Occlusion(Runner):
 
 if __name__ == "__main__":
     c = Occlusion()
-    success = c.run(num=50, pass_masks=['_img', '_mask'], room='empty', tot_frames=100, add_slope=False, trial_type='transition', png=False)
+    success = c.run(num=500, pass_masks=['_img', '_mask'], room='empty', tot_frames=130, add_slope=False, trial_type='transition', png=False)
     # The commented code only works for other masks then _img
     # for i in range(30):
     #     c = Occlusion(port=1000+i)
