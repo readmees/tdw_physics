@@ -27,8 +27,7 @@ class Occlusion(Runner):
         lib = ModelLibrarian('models_core.json')
         self.records = {record.name:record for record in lib.records}
 
-        #TODO change height depending on height objects
-        self.camera_pos = {"x": random.uniform(1.5, 2), "y": .1, "z": random.uniform(-1, 1)}
+        self.camera_pos = {"x": random.uniform(1.5, 2), "y": 0, "z": random.uniform(-1, 1)}
 
         super().__init__(port=port)
 
@@ -65,11 +64,11 @@ class Occlusion(Runner):
 
             #NOTE TODO Somehow width is often 0
             if height_occl > height_moving:
-                return [rec_moving, rec_occlu], height_occl
+                return [rec_moving, rec_occlu], [height_occl, width_moving]
             
             # If none of records is bigger then moving object
             if not occluders:
-                return [], height_occl
+                return [], [height_occl, width_moving]
             
     def add_occ_objects(self):
         '''This method adds two objects to the scene, one moving and one occluder'''
@@ -77,28 +76,31 @@ class Occlusion(Runner):
 
         # There might a occluding object that is bigger then any occluders, in this case try again
         while not records:
-            records, height_occl = self.get_two_random_records()
+            records, heights = self.get_two_random_records()
         self.names = [record.name for record in records]
         for i, record in enumerate(records):
+
             # Moving object is record[0] & self.o_ids[0] and occluder is record[1] & self.o_ids[1]
             object_id = self.o_ids[0] if i == 0 else self.o_ids[1]
             position = self.o_moving_loc if i == 0 else {"x": 0, "y": 0, "z": self.o_occl_loc_z}
             
-            # If moving object
-            if i == 0:
-                print(record.mass)
             # Set randomized physics values and update the physics info. #NOTE this is done incorrectly in tdw_physics with TDWUtils.get_unit_scale
             scale = random.uniform(0.9, 1.1)
 
+            rotation_y = random.uniform(-90, 90) if i == 0 else 0
             # Add object
             commands.extend(self.get_add_physics_object(model_name=record.name,
                                                         library="models_core.json",
                                                         object_id=object_id,
                                                         position=position,
-                                                        rotation={"x": 0, "y": random.uniform(-90, 90), "z": 0},
-                                                        scale_factor={"x": scale, "y": scale, "z": scale} 
+                                                        rotation={"x": 0, "y": rotation_y, "z": 0},
+                                                        scale_factor={"x": scale, "y": scale, "z": scale},
+                                                        default_physics_values=False,
+                                                        dynamic_friction=0.9,
+                                                        static_friction=0.9,
+                                                        mass = 1 # TODO, use real scale
                                                         ))
-        return commands, height_occl
+        return commands, heights
     
     def set_camera(self):
         # Add camera
@@ -147,7 +149,7 @@ class Occlusion(Runner):
                         print('transitiontime')
                         # Choose between reverse random speed change, stop
                         speed = random.choice([random.uniform(0.01, 0.3), 0])
-                        speed = speed if self.direction == 'right' or speed == 0 else -speed                
+                        speed = speed if self.direction == 'right' else -speed                
                         transition_compl = True
 
                         # Freeze object, then start 'manual' movement
@@ -197,7 +199,7 @@ class Occlusion(Runner):
         # Add objects and their ids, first id is moving object, second collider
         self.o_ids = [self.get_unique_id(), self.get_unique_id()]
         moving_o_id = self.o_ids[0]
-        commands, height_occl = self.add_occ_objects()
+        commands, heights = self.add_occ_objects()
 
         # Teleport camera same distance from occluder as moving object
         #TODO change height depending on height objects
@@ -205,7 +207,7 @@ class Occlusion(Runner):
         self.camera_pos['x'] = -self.o_moving_loc['x']
 
         # Float somewhere between the ground and occluder height
-        self.camera_pos['y'] = random.uniform(0, height_occl)
+        self.camera_pos['y'] = random.uniform(0.01, np.mean(heights))
         self.camera.teleport(position=self.camera_pos)
 
         # Rotate camera to occluding object
@@ -235,7 +237,7 @@ class Occlusion(Runner):
 
 if __name__ == "__main__":
     c = Occlusion()
-    success = c.run(num=50, pass_masks=['_img', '_mask'], room='empty', tot_frames=150, add_slope=False, trial_type='transition', png=False)
+    success = c.run(num=50, pass_masks=['_img', '_mask'], room='empty', tot_frames=100, add_slope=False, trial_type='transition', png=False)
     # The commented code only works for other masks then _img
     # for i in range(30):
     #     c = Occlusion(port=1000+i)
