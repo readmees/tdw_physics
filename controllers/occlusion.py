@@ -17,7 +17,7 @@ class Occlusion(Runner):
     def __init__(self, port=1071):
         self.controller_name = 'occlusion'
         #TODO change height depending on height objects
-        self.camera_pos = {"x": random.uniform(2, 3), "y": .1, "z": random.uniform(-1, 1)}
+        self.camera_pos = {"x": random.uniform(2, 2.5), "y": .1, "z": random.uniform(-1, 1)}
 
         # self.records = {record.name:record for record in lib.records}
         self._target_id: int = 0
@@ -76,7 +76,7 @@ class Occlusion(Runner):
             position = self.o_moving_loc if i == 0 else {"x": 0, "y": 0, "z": self.o_occl_loc_z}
             
             # Set randomized physics values and update the physics info.
-            scale = TDWUtils.get_unit_scale(record) * random.uniform(0.8, 1.1)
+            scale = TDWUtils.get_unit_scale(record) * random.uniform(0.89, 1.01)
 
             # Add object
             commands.extend(self.get_add_physics_object(model_name=record.name,
@@ -90,7 +90,8 @@ class Occlusion(Runner):
                                                         dynamic_friction=random.uniform(0, 0.9),
                                                         static_friction=random.uniform(0, 0.9),
                                                         bounciness=random.uniform(0, 1),
-                                                        scale_factor={"x": scale, "y": scale, "z": scale}))
+                                                        # scale_factor={"x": scale, "y": scale, "z": scale} #TODO uncomment for random
+                                                        ))
         return commands
     
     def calc_stopping_pos(self):
@@ -98,13 +99,16 @@ class Occlusion(Runner):
         so it's in line with the occluder vs camera
         using a**2+b**2=c**2'''
         a_mo_oc = np.abs(self.o_moving_loc['x'])+np.abs(self.camera_pos['x'])
-        b_mo_oc = np.abs(self.o_occl_loc_z) + np.abs(self.camera_pos['z']) 
+        b_mo_oc = self.o_occl_loc_z+np.abs(self.camera_pos['z']) 
 
         c_mo_oc = np.sqrt(a_mo_oc**2+b_mo_oc**2)
         c_co = np.sqrt(self.camera_pos['z']**2 + self.camera_pos['x']**2)
+        
         c_mo = c_mo_oc-c_co
-        b_mo = c_mo**2-self.o_moving_loc['x']**2
-        return b_mo if self.camera_pos['z'] <= 0 else -b_mo 
+
+        a_mo = self.o_moving_loc['x']**2
+        b_mo = np.sqrt(a_mo**2-c_mo**2)
+        return b_mo
     
     def set_camera(self):
         # Add camera
@@ -129,8 +133,22 @@ class Occlusion(Runner):
     def run_per_frame_commands(self, trial_type, tot_frames):
         # Check if transition is done
         transition_compl = False             
-
+        
+        # Calculate z distance from occluder
         stop_z = self.calc_stopping_pos()
+        stop_z = self.o_occl_loc_z + stop_z if self.camera_pos['z'] < 0 else  self.o_occl_loc_z - stop_z
+        stop_z = -self.camera_pos['z']+self.o_occl_loc_z
+        print(stop_z)
+        # If occluder is on the left of the camera, moving object should stop on the right and vice versa
+        if self.camera_pos['z'] > self.o_occl_loc_z:
+            stop_z = self.o_occl_loc_z - stop_z
+        else:
+            print('ELSE')
+            stop_z = self.o_occl_loc_z + stop_z
+
+
+            
+        # stop_z = stop_z + self.o_occl_loc_z # if stop_z >= 0 else stop_z - self.o_occl_loc_z
         for i in range(tot_frames):
             # Check if this is object based or transition trial
             if trial_type == 'transition':
@@ -145,7 +163,7 @@ class Occlusion(Runner):
 
 
                         # Choose between reverse random speed change, stop, random speed change
-                        speed = random.choice([-random.uniform(0.01, 0.2), 0, random.uniform(0.01, 0.2)])                 
+                        speed = random.choice([-random.uniform(0.01, 0.3), 0, random.uniform(0.01, 0.3)])                 
                         transition_compl = True
 
                         # Freeze object, then start 'manual' movement

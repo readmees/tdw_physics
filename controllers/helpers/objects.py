@@ -49,7 +49,7 @@ CONTAINED = [
     '90.b04_bottle-2014-2018',
     '91.b04_bottle_20ml',
     '284.chocolate_bar001',
-    '282.champagne_cork',
+    # '282.champagne_cork', #Scale is too big
     '259.calculator'
 ]
 
@@ -97,9 +97,9 @@ OCCLUDERS = [
     # '255.cabinet_full_height_wood_beach_honey', #WEIRD DOOR IS WEIRD
     # '256.cabinet_full_height_wood_beech_honey_composite', #WEIRD DOOR IS WEIRD
     # '257.cabinet_full_height_wood_oak_white_composite', #WEIRD DOOR IS WEIRD
-    '195.bed01',
-    '196.bed01_blue',
-    '197.bed01_red',
+    # '195.bed01', #SCALE Sometimes to big
+    # '196.bed01_blue',#SCALE Sometimes to big
+    # '197.bed01_red',#SCALE Sometimes to big
     '181.balance_double_doghouse'
 ]
 
@@ -150,7 +150,7 @@ OCCLUDED = [
     '90.b04_bottle-2014-2018',
     '91.b04_bottle_20ml',
     '284.chocolate_bar001',
-    '282.champagne_cork',
+    # '282.champagne_cork', #Scale is too big
     '259.calculator'
 ]
     
