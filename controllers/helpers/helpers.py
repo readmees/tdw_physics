@@ -59,11 +59,14 @@ def images_to_video(image_folder, video_name, fps, pass_masks, png):
         input_names += file_ex
 
         # Create the video for every mask type, loglevel="quiet" to mute output
+        # Every first frame is skipped
         (
             ffmpeg
             .input(input_names, pattern_type='glob', framerate=fps)
+            .filter('select', 'gte(n, 1)')
             .output(video_name+f'{mask_type}.mp4', loglevel="quiet")
             .run()
+
         )
 
 def message(message, message_type, progress=None):
