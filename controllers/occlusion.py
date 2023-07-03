@@ -9,25 +9,29 @@ from tdw.add_ons.third_person_camera import ThirdPersonCamera
 import random
 from helpers.runner_main import Runner
 from helpers.objects import *
+from helpers.helpers import message
 
 # To keep track of where the moving objects is
 from tdw.output_data import Transforms, OutputData
+from tdw.librarian import ModelLibrarian
 import numpy as np
+
 class Occlusion(Runner):
     def __init__(self, port=1071):
         self.controller_name = 'occlusion'
-        #TODO change height depending on height objects
-        self.camera_pos = {"x": random.uniform(2, 2.5), "y": .1, "z": random.uniform(-1, 1)}
+        lib = ModelLibrarian('models_core.json')
+        self.records = {record.name:record for record in lib.records}
 
-        # self.records = {record.name:record for record in lib.records}
-        self._target_id: int = 0
+        #TODO change height depending on height objects
+        self.camera_pos = {"x": random.uniform(1.5, 2), "y": .1, "z": random.uniform(-1, 1)}
+
         super().__init__(port=port)
 
     def get_two_random_records(self):
         '''This method gets two objects, where 
         occluder is bigger in width and height''' #TODO Choose set of suitable objects
         # Store globals in locals, so we can remove objects temporary
-        occluded, occluders = OCCLUDED.copy(), OCCLUDERS.copy()
+        occluded, occluders = list(set(OCCLUDED.copy())), list(set(OCCLUDERS.copy()))
         
         # Choose a random occluded object
         o_moving_name = random.choice(occluded)
@@ -38,7 +42,6 @@ class Occlusion(Runner):
         # Get height and width of moving object #TODO check this formula
         height_moving = abs(rec_moving.bounds['top']['y'] - rec_moving.bounds['bottom']['y'])
         width_moving = abs(rec_moving.bounds['left']['z'] - rec_moving.bounds['right']['z'])
-        print('moving', o_moving_name, height_moving, width_moving)
 
         # Make sure the occluding object covers the other object
         while True:
@@ -51,8 +54,9 @@ class Occlusion(Runner):
 
             # Calculate height and width of occluder #TODO check this formula
             height_occl = abs(rec_occlu.bounds['top']['y'] - rec_occlu.bounds['bottom']['y'])
+
+            #NOTE TODO Somehow width is often 0
             width_occl = abs(rec_occlu.bounds['left']['z'] - rec_occlu.bounds['right']['z'])
-            print('occlu', o_occlu_name, height_occl, width_occl)
 
             #NOTE TODO Somehow width is often 0
             if height_occl > height_moving:
@@ -69,7 +73,7 @@ class Occlusion(Runner):
         # There might a occluding object that is bigger then any occluders, in this case try again
         while not records:
             records = self.get_two_random_records()
-
+        self.names = [record.name for record in records]
         for i, record in enumerate(records):
             # Moving object is record[0] & self.o_ids[0] and occluder is record[1] & self.o_ids[1]
             object_id = self.o_ids[0] if i == 0 else self.o_ids[1]
@@ -90,7 +94,7 @@ class Occlusion(Runner):
                                                         dynamic_friction=random.uniform(0, 0.9),
                                                         static_friction=random.uniform(0, 0.9),
                                                         bounciness=random.uniform(0, 1),
-                                                        # scale_factor={"x": scale, "y": scale, "z": scale} #TODO uncomment for random
+                                                        scale_factor={"x": scale, "y": scale, "z": scale} #TODO uncomment for random scale
                                                         ))
         return commands
     
@@ -99,15 +103,15 @@ class Occlusion(Runner):
         so it's in line with the occluder vs camera
         using a**2+b**2=c**2'''
         a_mo_oc = np.abs(self.o_moving_loc['x'])+np.abs(self.camera_pos['x'])
-        b_mo_oc = self.o_occl_loc_z+np.abs(self.camera_pos['z']) 
+        b_mo_oc = np.abs(self.o_occl_loc_z)+np.abs(self.camera_pos['z']) 
 
         c_mo_oc = np.sqrt(a_mo_oc**2+b_mo_oc**2)
         c_co = np.sqrt(self.camera_pos['z']**2 + self.camera_pos['x']**2)
         
         c_mo = c_mo_oc-c_co
 
-        a_mo = self.o_moving_loc['x']**2
-        b_mo = np.sqrt(a_mo**2-c_mo**2)
+        a_mo = self.o_moving_loc['x']
+        b_mo = np.sqrt(c_mo**2 - a_mo**2)
         return b_mo
     
     def set_camera(self):
@@ -119,7 +123,6 @@ class Occlusion(Runner):
     
     def get_ob_pos(self, o_id, resp):
         '''Get object position'''
-
         for i in range(len(resp) - 1):
             r_id = OutputData.get_data_type_id(resp[i])
             # Parse Transforms output data to get the object's position.
@@ -129,6 +132,7 @@ class Occlusion(Runner):
                     if transforms.get_id(j) == o_id:
                         # Return position of object with o_id as object id
                         return transforms.get_position(j)
+        return message(f"{self.names[0]} does not have positions data, with occluder {self.names[1]}", 'error')
 
     def run_per_frame_commands(self, trial_type, tot_frames):
         # Check if transition is done
@@ -136,18 +140,15 @@ class Occlusion(Runner):
         
         # Calculate z distance from occluder
         stop_z = self.calc_stopping_pos()
-        stop_z = self.o_occl_loc_z + stop_z if self.camera_pos['z'] < 0 else  self.o_occl_loc_z - stop_z
-        stop_z = -self.camera_pos['z']+self.o_occl_loc_z
-        print(stop_z)
+
         # If occluder is on the left of the camera, moving object should stop on the right and vice versa
         if self.camera_pos['z'] > self.o_occl_loc_z:
+            print('camera is on the right of occluder, object stops on the left of occluder') 
             stop_z = self.o_occl_loc_z - stop_z
         else:
-            print('ELSE')
+            print('camera is on the left of occluder, object stops on the right of occluder')# Works
             stop_z = self.o_occl_loc_z + stop_z
 
-
-            
         # stop_z = stop_z + self.o_occl_loc_z # if stop_z >= 0 else stop_z - self.o_occl_loc_z
         for i in range(tot_frames):
             # Check if this is object based or transition trial
@@ -156,14 +157,9 @@ class Occlusion(Runner):
                 if self.o_moving_loc['z'] > stop_z and self.direction == 'left' or self.o_moving_loc['z'] < stop_z and self.direction == 'right':
                     commands = []
                     if not transition_compl:
-                        print('stop_z', stop_z)
-                        print('cam', self.camera_pos)
-                        print('moving postiion', self.o_moving_loc)
-                        print('occluder', self.o_occl_loc_z)
-
-
-                        # Choose between reverse random speed change, stop, random speed change
-                        speed = random.choice([-random.uniform(0.01, 0.3), 0, random.uniform(0.01, 0.3)])                 
+                        # Choose between reverse random speed change, stop
+                        speed = random.choice([random.uniform(0.01, 0.3), 0])
+                        speed = speed if self.direction == 'right' or speed == 0 else -speed                
                         transition_compl = True
 
                         # Freeze object, then start 'manual' movement
@@ -181,8 +177,10 @@ class Occlusion(Runner):
                     # Update previous position with current position, only update z position 
                     # #NOTE: I assume here that the output of get_ob_pos is [x, y, z]
                     for axis_name, axis_val in zip(['x', 'y', 'z'], self.get_ob_pos(self.o_ids[0], resp)):
+                        if isinstance(axis_val, str):
+                            return axis_val
                         self.o_moving_loc[axis_name] = axis_val
-
+                        
             if trial_type == 'object':
                 self.communicate([])
         
@@ -203,7 +201,7 @@ class Occlusion(Runner):
 
         # Define the location of moving object #TODO bigger variations
         z = random.uniform(-5, -4) if self.direction == 'left' else random.uniform(5, 4)
-        self.o_moving_loc = {"x": random.uniform(-4, -2), "y": 0, "z": z}
+        self.o_moving_loc = {"x": random.uniform(-2.5, -1), "y": 0, "z": z}
         
         # Define the z location of occluding object
         self.o_occl_loc_z = random.uniform(-.5, .5)
@@ -238,13 +236,15 @@ class Occlusion(Runner):
         # Keep track of transforms, so we can keep track of the movement
         commands.append({"$type": "send_transforms",
                                   "frequency": "always"})
+        
+        print(self.names)
         return commands
     
 
 if __name__ == "__main__":
     c = Occlusion()
-    success = c.run(num=300, pass_masks=['_img', '_id'], room='empty', tot_frames=150, add_slope=False, trial_type='transition', png=False)
-    # The following code only works for other masks then _img
+    success = c.run(num=50, pass_masks=['_img', '_mask'], room='empty', tot_frames=150, add_slope=False, trial_type='transition', png=False)
+    # The commented code only works for other masks then _img
     # for i in range(30):
     #     c = Occlusion(port=1000+i)
     #     success = c.run(num=3, pass_masks=['_img', '_id'], room='empty', tot_frames=150, add_slope=False, trial_type='object', png=False)

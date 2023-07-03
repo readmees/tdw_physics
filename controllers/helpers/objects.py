@@ -119,6 +119,24 @@ OCCLUDERS_SEE_THROUGH = [
 ]
 
 OCCLUDED = [
+        '41.b03_696615_object001',
+    '46.b03_basket',
+    '88.b04_basket',
+    '94.b04_bowl_smooth',
+    '317.elephant_bowl',
+    '299.cup',  # Tiny
+    '295.coffeemug',
+    '293.coffeecup004',
+    '294.coffeecup004_fix',
+    '215.box_18inx18inx12in_cardboard',
+    '216.box_24inx18inx12in_cherry',
+    '217.box_tapered_beech',
+    '218.box_tapered_white_mesh',
+    '188.basket_18inx18inx12iin',
+    '189.basket_18inx18inx12iin_bamboo',
+    '190.basket_18inx18inx12iin_plastic_lattice',
+    '191.basket_18inx18inx12iin_wicker',
+    '192.basket_18inx18inx12iin_wood_mesh'
     '0.034_vray',
     '1.102_pepsi_can_12_fl_oz_vray',
     '2.104_sprite_can_12_fl_oz_vray', #GOOD
@@ -128,6 +146,7 @@ OCCLUDED = [
     '17.aaa_battery',
     '18.afl_lamp', #GOOD
     '19.alarm_clock',
+   '22.amphora_jar_vase',
     '23.apple',
     '24.apple_ipod_touch_grey_vray',
     # '36.atmosphere_nodo', #NOT GOOD
@@ -139,6 +158,7 @@ OCCLUDED = [
     '57.b03_hair_comb_2010',
     '58.b03_iron_candle_vray',
     '61.b03_loafbread',
+    '62.b03_morphy_2013__vray',
     '65.b03_padlock',
     '66.b03_pen',
     '67.b03_pen_01_001',
