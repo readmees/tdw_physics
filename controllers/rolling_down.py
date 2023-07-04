@@ -1,8 +1,13 @@
 # STATUS: V1 - Experimential
-#TODO: random turns/scales/position cube
-#TODO: add other objects then cube
-#TODO: add more rolling objects
-# STATUS: Not updated for new streamlines process yet
+'''
+Readme:
+
+Possible improvements:
+random turns/scales/position cube
+add other objects then cube
+add more rolling objects
+Always make two versions of the exact same trial, object and transition?
+'''
 from tdw.controller import Controller
 from tdw.tdw_utils import TDWUtils
 from tdw.add_ons.third_person_camera import ThirdPersonCamera
@@ -55,6 +60,7 @@ from typing import Dict
 from helpers.helpers import ObjectInfo, get_random_avatar_position
 
 from helpers.runner_main import Runner
+from helpers.objects import BALLS
 
 
 class Slope(Runner):
@@ -66,7 +72,7 @@ class Slope(Runner):
         self.objects = ["apple",
                         "golf",
                     "orange"]
-    
+        self.object.extend(BALLS)
     def run_per_frame_commands(self, trial_type, tot_frames):
         '''Communicate once for every frame
         param trial_type: you can choose if you would like to run an trial object, agent or transition based
@@ -91,6 +97,15 @@ class Slope(Runner):
                             "frequency": "never"})
         self.communicate(destroy_commands)
 
+    def set_camera(self):
+        ''' The avatar_id of the camera should be 'frames_temp'
+        '''
+        # Add camera
+        camera = ThirdPersonCamera(position={"x": 1, "y": 1.6, "z": -1},
+                           look_at={"x": 0, "y": 0, "z": 0},
+                           avatar_id='frames_temp')
+        self.add_ons.append(camera)
+
     def trial_initialization_commands(self):
         if not self.slope_added:
             return message('Rolling down trials should have slope', 'error')
@@ -107,10 +122,10 @@ class Slope(Runner):
         commands.extend(self.get_add_physics_object(model_name=random.choice(self.objects),
                                                     library='models_core.json',
                                                     object_id=o_id1,
-                                                    position={"x": .5, "y": random.uniform(.5, 1.5), "z": 0}))
+                                                    position={"x": 0, "y": random.uniform(.5, 1.5), "z": 0}))
         return commands
     
 if __name__ == "__main__":
     c = Slope()
-    success = c.run(num=3, pass_masks=['_img', '_id', '_category'], room='empty', tot_frames=150, add_slope=True, trial_type='transition')
+    success = c.run(num=3, pass_masks=['_img', '_id', '_category'], room='empty', tot_frames=150, add_slope=True, trial_type='object')
     print(success)

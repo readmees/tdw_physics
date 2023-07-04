@@ -43,20 +43,31 @@ class Runner(Controller):
     
     def add_slope(self, commands = []):
         '''This method adds a slope for the rolling down trials, by adding a freezed cube object'''
-        slope_id = self.get_unique_id()
+        ids = [self.get_unique_id(), self.get_unique_id()]
+        slope_id = ids[0]
+        wall_id = ids[1]
 
         commands.extend(self.get_add_physics_object(model_name="cube",
                                                     library="models_flex.json",
                                                     object_id=slope_id,
                                                     rotation={"x": 0, "y": 0, "z": random.uniform(216, 244)},
-                                                    position={"x": 0, "y": 0, "z": 0}))
+                                                    position={"x": -.5, "y": 0, "z": 0},
+                                                    scale_factor = {"x": .8, "y": .8, "z": .8}))
         
-        # Freeze position and rotation for each axis
-        commands.extend([{"$type": "set_rigidbody_constraints", "id": slope_id, "freeze_position_axes": {"x": 1, "y": 1, "z": 1}, "freeze_rotation_axes": {"x": 1, "y": 1, "z": 1}}])
-        # Set a random color.
-        commands.append({"$type": "set_color",
-                         "color": {"r": random.random(), "g": random.random(), "b": random.random(), "a": 1.0},
-                         "id": slope_id})
+        commands.extend(self.get_add_physics_object(model_name="cube",
+                                                    library="models_flex.json",
+                                                    object_id=wall_id,
+                                                    position={"x": .5, "y": 0, "z": 0},
+                                                    rotation={"x": 0, "y": 180, "z": 0},
+                                                    scale_factor={"x": .1, "y": .25, "z": .5}
+                                                    ))
+        for id in ids:
+            # Freeze position and rotation for each axis
+            commands.extend([{"$type": "set_rigidbody_constraints", "id": id, "freeze_position_axes": {"x": 1, "y": 1, "z": 1}, "freeze_rotation_axes": {"x": 1, "y": 1, "z": 1}}])
+            # Set a random color.
+            commands.append({"$type": "set_color",
+                            "color": {"r": random.random(), "g": random.random(), "b": random.random(), "a": 1.0},
+                            "id": id})
         return commands
     
     def set_camera(self):

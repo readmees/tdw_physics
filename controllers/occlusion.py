@@ -1,10 +1,19 @@
 # STATUS: V1 - Experimential
 '''
+Readme:
 The scales of the objects are random
 The rotation of the objects is random
 The height and distance of the camera is random for every trial
 The camera is always the same perpendicular z distance from the x axis as the same from the moving object
 The occluder is always on the y and z are always 0 for the occluder
+
+Possible improvements:
+Use real physics (e.g. mass)
+Fix other rooms if needed
+Make after-selector: if occluder on edge -> remove, if amount of objects < 2 remove
+Use width, not only height, which is already sketchy
+Use bounds to fit objects better
+Move small objects closer
 '''
 from tdw.add_ons.third_person_camera import ThirdPersonCamera
 from typing import Dict
@@ -237,7 +246,7 @@ class Occlusion(Runner):
 
 if __name__ == "__main__":
     c = Occlusion()
-    success = c.run(num=500, pass_masks=['_img', '_mask'], room='empty', tot_frames=130, add_slope=False, trial_type='transition', png=False)
+    success = c.run(num=500, pass_masks=['_img', '_mask'], room='empty', tot_frames=160, add_slope=False, trial_type='object', png=False)
     # The commented code only works for other masks then _img
     # for i in range(30):
     #     c = Occlusion(port=1000+i)
