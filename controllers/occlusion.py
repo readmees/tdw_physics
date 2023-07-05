@@ -36,7 +36,7 @@ class Occlusion(Runner):
         lib = ModelLibrarian('models_core.json')
         self.records = {record.name:record for record in lib.records}
 
-        self.camera_pos = {"x": random.uniform(1.5, 2), "y": 0, "z": random.uniform(-1, 1)}
+        self.camera_pos = {"x": random.uniform(1.5, 2), "y": 0.1, "z": random.uniform(-1, 1)}
 
         super().__init__(port=port)
 

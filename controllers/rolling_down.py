@@ -9,21 +9,10 @@ add more rolling objects
 Always make two versions of the exact same trial, object and transition?
 
 '''
-from tdw.controller import Controller
-from tdw.tdw_utils import TDWUtils
 from tdw.add_ons.third_person_camera import ThirdPersonCamera
 from typing import Dict
-from tdw.controller import Controller
-from tdw.add_ons.third_person_camera import ThirdPersonCamera
-from tdw.add_ons.object_manager import ObjectManager
 
 # Added for video
-from tdw.add_ons.image_capture import ImageCapture
-from tdw.backend.paths import EXAMPLE_CONTROLLER_OUTPUT_PATH
-from os import chdir, system
-from subprocess import call
-import shutil
-
 # Added for occlusions
 import random
 
