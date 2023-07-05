@@ -183,7 +183,7 @@ ROLLING_FLIPPED = [
     '50.b03_cocacola_can_cage',
     '90.b04_bottle-2014-2018',
     '91.b04_bottle_20ml',
-    '92.b04_bottle_2_max',
+    # '92.b04_bottle_2_max', #? two bottles
     '93.b04_bottle_max'
 ]
 

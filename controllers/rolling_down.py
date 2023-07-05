@@ -7,6 +7,7 @@ random turns/scales/position cube
 add other objects then cube
 add more rolling objects
 Always make two versions of the exact same trial, object and transition?
+
 '''
 from tdw.controller import Controller
 from tdw.tdw_utils import TDWUtils
@@ -60,7 +61,7 @@ from typing import Dict
 from helpers.helpers import ObjectInfo, get_random_avatar_position
 
 from helpers.runner_main import Runner
-from helpers.objects import BALLS
+from helpers.objects import ROLLING_FLIPPED
 
 
 class Slope(Runner):
@@ -72,15 +73,15 @@ class Slope(Runner):
         self.objects = ["apple",
                         "golf",
                     "orange"]
-        self.object.extend(BALLS)
+        self.objects.extend(ROLLING_FLIPPED)
+        
     def run_per_frame_commands(self, trial_type, tot_frames):
         '''Communicate once for every frame
         param trial_type: you can choose if you would like to run an trial object, agent or transition based
         param tot_frames: the total amount of frames per trial
         '''
         #TODO: improve transition
-        transition_frame = random.choice(list(range(tot_frames)))
-        # transition_frame = tot_frames//3
+        transition_frame = random.choice(list(range(tot_frames//3, tot_frames)))
         for i in range(tot_frames):
             if i >= transition_frame and trial_type == 'transition':
                 print('transition, started')
@@ -101,7 +102,7 @@ class Slope(Runner):
         ''' The avatar_id of the camera should be 'frames_temp'
         '''
         # Add camera
-        camera = ThirdPersonCamera(position={"x": 1, "y": 1.6, "z": -1},
+        camera = ThirdPersonCamera(position={"x": 0, "y": 1.2, "z": -1},
                            look_at={"x": 0, "y": 0, "z": 0},
                            avatar_id='frames_temp')
         self.add_ons.append(camera)
@@ -119,13 +120,17 @@ class Slope(Runner):
         self.o_ids = [o_id1]
 
         commands = []
-        commands.extend(self.get_add_physics_object(model_name=random.choice(self.objects),
+
+        object_choice = random.choice(self.objects)
+        rotation_x = 0 if object_choice not in ROLLING_FLIPPED else random.choice([90, -90])
+        commands.extend(self.get_add_physics_object(model_name=object_choice,
                                                     library='models_core.json',
                                                     object_id=o_id1,
-                                                    position={"x": 0, "y": random.uniform(.5, 1.5), "z": 0}))
+                                                    position={"x": 0, "y": random.uniform(.5, 1.5), "z": 0},
+                                                    rotation={"x": rotation_x, "y": 0, "z": 0}))
         return commands
     
 if __name__ == "__main__":
     c = Slope()
-    success = c.run(num=3, pass_masks=['_img', '_id', '_category'], room='empty', tot_frames=150, add_slope=True, trial_type='object')
+    success = c.run(num=20, pass_masks=['_img', '_id'], room='empty', tot_frames=200, add_slope=True, trial_type='object')
     print(success)
