@@ -16,7 +16,6 @@ class Runner(Controller):
         # Important to use the models_core, since the index from is based on the helpers.objects
         lib = ModelLibrarian('models_core.json')
         self.records = lib.records
-
         super().__init__(port=port) 
         
     def trial_initialization_commands(self):
@@ -75,10 +74,10 @@ class Runner(Controller):
         The avatar_id of the camera should be 'frames_temp'
         '''
         # Add camera
-        camera = ThirdPersonCamera(position={"x": 2, "y": 1.6, "z": -1},
+        self.camera = ThirdPersonCamera(position=self.camera_pos,
                            look_at={"x": 0, "y": 0, "z": 0},
                            avatar_id='frames_temp')
-        self.add_ons.append(camera)
+        self.add_ons.append(self.camera)
     
     def run(self, num=5, trial_type='object', png=False, pass_masks=["_img", "_mask"], framerate = 30, room='random', 
             tot_frames=200, add_slope=False):
@@ -116,7 +115,7 @@ class Runner(Controller):
         controller_name = self.controller_name
         
         # Define path for output data frames
-        path_main = '../data_publish'
+        path_main = '../data_temp'
         paths = [f'{path_main}/{name}/{controller_name}/{trial_type}' for name in ['backgrounds', 'videos']]
         path_backgr, path_videos = paths
         path_frames = f'{path_main}/frames_temp'
