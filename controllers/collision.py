@@ -91,7 +91,7 @@ class Collision(Runner):
         self.positions = self.set_fall_postions() if coll_type == 'fall' else self.set_force_positions()
 
         # To choose random object without putting back
-        self.object = random.shuffle(self.objects)
+        self.objects = random.shuffle(self.objects)
 
         commands = self.add_objects(commands=[])
         if coll_type == 'force':
@@ -108,7 +108,7 @@ class Collision(Runner):
         cam_turn = deepcopy(self.positions[0])
 
         # Turn camera up/down, if objects falls down
-        cam_turn['y'] = self.positions[1]['y']*1.5/2 if coll_type == 'fall' else 1.5
+        cam_turn['y'] = 0 # self.positions[1]['y']/10 if coll_type == 'fall' else 1.5
 
         # Rotate camera to occluding object
         # self.camera_pos = {"x": random.uniform(-2, 2), "y": 0.1, "z": random.uniform(-2, 1)}
