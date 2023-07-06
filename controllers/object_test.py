@@ -1,5 +1,12 @@
-# STATUS: Messy, but it works
-# Description: this file is to test which objects create bugs and which objects are fine
+# STATUS: V1 - Experimential
+'''
+Readme:
+The goal of this file is to test which objects create bugs and which objects are fine
+
+Possible improvements:
+This file is extremely messy, since it's just made to show the objects quickly for the developers
+Zoom in and out with smaller objects
+'''
 from tdw.controller import Controller
 from tdw.tdw_utils import TDWUtils
 from tdw.add_ons.third_person_camera import ThirdPersonCamera

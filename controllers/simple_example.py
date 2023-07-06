@@ -16,8 +16,6 @@ from subprocess import call
 import shutil
 import random
 
-# Added for collisions
-
 from helpers.runner_main import Runner
 
 class Collision(Runner):

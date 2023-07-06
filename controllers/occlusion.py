@@ -30,6 +30,7 @@ from tdw.librarian import ModelLibrarian
 import numpy as np
 
 from tdw.object_data.object_static import ObjectStatic
+
 class Occlusion(Runner):
     def __init__(self, port=1071):
         self.controller_name = 'occlusion'
