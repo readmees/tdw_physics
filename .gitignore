@@ -8,4 +8,5 @@ controllers/__pycache__/*
 controllers/helpers/__pycache__/*
 .DS_Store
 data_publish.zip
-data_temp/
+data_temp/*
+data_published/*
