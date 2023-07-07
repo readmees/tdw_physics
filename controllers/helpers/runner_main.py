@@ -40,33 +40,10 @@ class Runner(Controller):
                             "frequency": "never"})
         self.communicate(destroy_commands)
     
-    def add_slope(self, commands = []):
-        '''This method adds a slope for the rolling down trials, by adding a freezed cube object'''
-        ids = [self.get_unique_id(), self.get_unique_id()]
-        slope_id = ids[0]
-        wall_id = ids[1]
-
-        commands.extend(self.get_add_physics_object(model_name="cube",
-                                                    library="models_flex.json",
-                                                    object_id=slope_id,
-                                                    rotation={"x": 0, "y": 0, "z": random.uniform(216, 244)},
-                                                    position={"x": -.5, "y": 0, "z": 0},
-                                                    scale_factor = {"x": .8, "y": .8, "z": .8}))
-        
-        commands.extend(self.get_add_physics_object(model_name="cube",
-                                                    library="models_flex.json",
-                                                    object_id=wall_id,
-                                                    position={"x": .5, "y": 0, "z": 0},
-                                                    rotation={"x": 0, "y": 180, "z": 0},
-                                                    scale_factor={"x": .1, "y": .25, "z": .5}
-                                                    ))
-        for id in ids:
-            # Freeze position and rotation for each axis
-            commands.extend([{"$type": "set_rigidbody_constraints", "id": id, "freeze_position_axes": {"x": 1, "y": 1, "z": 1}, "freeze_rotation_axes": {"x": 1, "y": 1, "z": 1}}])
-            # Set a random color.
-            commands.append({"$type": "set_color",
-                            "color": {"r": random.random(), "g": random.random(), "b": random.random(), "a": 1.0},
-                            "id": id})
+    def add_object_to_scene(self, commands = []):
+        '''This method should be used to add a fixed object to the scene, since the object will not change 
+        during trials and is fixed in place, it will be added to the background shot
+        See containment.py and rolling_down.py for examples'''
         return commands
     
     def set_camera(self):
@@ -80,7 +57,7 @@ class Runner(Controller):
         self.add_ons.append(self.camera)
     
     def run(self, num=5, trial_type='object', png=False, pass_masks=["_img", "_mask"], framerate = 30, room='random', 
-            tot_frames=200, add_slope=False):
+            tot_frames=200, add_object_to_scene=False):
         '''
         param num: the number of trials
         param trial_type: you can choose if you would like to run an trial object, agent or transition based
@@ -89,8 +66,8 @@ class Runner(Controller):
         param framerate: target framerate and fps of video, should be int
         param room: can be any of the specified scene names, 'empty' will create an empty room, 'random_unsafe' pick a random room which is not safe,
                     because not all rooms are tested
-        param tot_frames: nummer of frames per trials
-        param add_slope: add slope to the background, for rolling down trials
+        param tot_frames: circa nummer of frames per trials #NOTE this is not the exact number of frames 
+        param add_object_to_scene: add objects to the scene (and background), add slope to the background, for rolling down trials
         '''
         # Check if input Camera params are valid
         if not isinstance(pass_masks, list):
@@ -156,13 +133,13 @@ class Runner(Controller):
         commands.append({"$type": "set_target_framerate",
                         "framerate": framerate})
         
-        # Add slope to the background, if param add_slope is true
-        if isinstance(add_slope, bool):
-            if add_slope:
-                commands = self.add_slope(commands)
-            self.slope_added = add_slope
+        # Add slope to the background, if param add_object_to_scene is true
+        if isinstance(add_object_to_scene, bool):
+            if add_object_to_scene:
+                commands = self.add_object_to_scene(commands)
+            self.slope_added = add_object_to_scene
         else:
-            return message('Parameter add_slope should be of type bool', 'error')
+            return message('Parameter add_object_to_scene should be of type bool', 'error')
         
         # Save scene/background separately
         self.communicate(commands)

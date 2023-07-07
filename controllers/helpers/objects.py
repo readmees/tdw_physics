@@ -250,3 +250,6 @@ OCCLUDED = [item.split('.')[1] for item in OCCLUDED]
 ROLLING_FLIPPED = [item.split('.')[1] for item in ROLLING_FLIPPED] 
 BALLS = [item.split('.')[1] for item in BALLS] 
 FAULTY = [item.split('.')[1] for item in FAULTY] 
+
+# Objects to add to scene
+SCENE_OBJECTS = ["bowl", "cone", "cube", "cylinder", "dumbbell", "octahedron", "pentagon", "pipe", "platonic", "pyramid", "sphere", "torus", "triangular_prism"]

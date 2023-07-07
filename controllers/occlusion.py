@@ -43,11 +43,11 @@ class Occlusion(Runner):
 
     def get_two_random_records(self):
         '''This method gets two objects, where 
-        occluder is bigger in width and height''' #TODO Choose set of suitable objects
+        occluder is bigger in width and height''' 
         # Store globals in locals, so we can remove objects temporary
         occluded, occluders = list(set(OCCLUDED.copy())), list(set(OCCLUDERS.copy()))
         
-        # Choose a random occluded object
+        # Choose a random moving object
         o_moving_name = random.choice(occluded)
 
         # Get record of moving object
@@ -247,9 +247,9 @@ class Occlusion(Runner):
 
 if __name__ == "__main__":
     c = Occlusion()
-    success = c.run(num=500, pass_masks=['_img', '_mask'], room='empty', tot_frames=160, add_slope=False, trial_type='object', png=False)
+    success = c.run(num=500, pass_masks=['_img', '_mask'], room='empty', tot_frames=160, add_object_to_scene=False, trial_type='object', png=False)
     # The commented code only works for other masks then _img
     # for i in range(30):
     #     c = Occlusion(port=1000+i)
-    #     success = c.run(num=3, pass_masks=['_img', '_id'], room='empty', tot_frames=150, add_slope=False, trial_type='object', png=False)
+    #     success = c.run(num=3, pass_masks=['_img', '_id'], room='empty', tot_frames=150, add_object_to_scene=False, trial_type='object', png=False)
     print(success)

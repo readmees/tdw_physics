@@ -63,5 +63,5 @@ class Collision(Runner):
     
 if __name__ == "__main__":
     c = Collision()
-    success = c.run(num=3, pass_masks=['_img'], room='empty', add_slope=True, tot_frames=5, png=False)
+    success = c.run(num=3, pass_masks=['_img'], room='empty', add_object_to_scene=True, tot_frames=5, png=False)
     print(success)
