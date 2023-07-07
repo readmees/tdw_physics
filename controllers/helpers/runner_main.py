@@ -115,7 +115,7 @@ class Runner(Controller):
         controller_name = self.controller_name
         
         # Define path for output data frames
-        path_main = '../data_temp'
+        path_main = '../data_publish'
         paths = [f'{path_main}/{name}/{controller_name}/{trial_type}' for name in ['backgrounds', 'videos']]
         path_backgr, path_videos = paths
         path_frames = f'{path_main}/frames_temp'
@@ -147,7 +147,7 @@ class Runner(Controller):
             commands = [TDWUtils.create_empty_room(12, 12)]
         elif room in scene_names or room == 'random':
             scene_name = random.choice(scene_names) if room == 'random' else room
-            print('scene_name=', scene_name)
+            print('The name of the selected scene is:', scene_name)
             commands = [self.get_add_scene(scene_name=scene_name)]
         else:
             return message(f"param room should be 'empty', 'random' or any of the following names: \n {scene_names}", 'error')
@@ -198,8 +198,6 @@ class Runner(Controller):
             output_video = f"{path_videos}/{trial_id}_trial_{trial_num}"
 
             # Convert images to videos
-            print(path_frames)
-            print(output_video)
             images_to_video(path_frames, output_video, framerate, pass_masks, png)
             shutil.rmtree(path_frames)
 

@@ -16,7 +16,7 @@ CONTAINERS = [
     '189.basket_18inx18inx12iin_bamboo',
     '190.basket_18inx18inx12iin_plastic_lattice',
     '191.basket_18inx18inx12iin_wicker',
-    '192.basket_18inx18inx12iin_wood_mesh'
+    # '192.basket_18inx18inx12iin_wood_mesh' Nonetype
 ]
 
 CONTAINED = [
@@ -136,7 +136,7 @@ OCCLUDED = [
     '189.basket_18inx18inx12iin_bamboo',
     '190.basket_18inx18inx12iin_plastic_lattice',
     '191.basket_18inx18inx12iin_wicker',
-    '192.basket_18inx18inx12iin_wood_mesh'
+    # '192.basket_18inx18inx12iin_wood_mesh' NoneType
     '0.034_vray',
     '1.102_pepsi_can_12_fl_oz_vray',
     '2.104_sprite_can_12_fl_oz_vray', #GOOD

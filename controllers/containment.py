@@ -1,6 +1,12 @@
-# Status: V1 Experimental
-#TODO: shaking doesn't work yet
-#TODO: freeze y-axis
+# STATUS: Not finished
+'''
+Readme:
+The core of of this code is taken from tdw_physics
+
+Possible improvements:
+Shaking doesn't work yet
+Freeze y-axis; probably not necessary with 'new' containment idea
+'''
 from typing import List
 from random import choice, uniform
 from tdw.tdw_utils import TDWUtils
@@ -12,6 +18,7 @@ from tdw_physics.util import get_args
 from tdw.add_ons.third_person_camera import ThirdPersonCamera
 
 from helpers.runner_main import Runner
+from helpers.objects import CONTAINERS, CONTAINED
 class Containment(Runner):
     """
     Create a set of "Containment" trials, where a container object holds a smaller target
@@ -19,24 +26,7 @@ class Containment(Runner):
     """
 
     Controller.MODEL_LIBRARIANS["models_core.json"] = ModelLibrarian("models_core.json")
-    CONTAINERS = ["b03_696615_object001",
-"b03_object05",
-"b04_bowl_smooth",
-"int_kitchen_accessories_le_creuset_bowl_30cm",
-"serving_bowl",
-"teatray",
-"woven_box"]
-    OBJECTS = ["amphora_jar_vase",
-"apple",
-"b03_burger",
-"b04_banana",
-"b04_orange_00",
-"golf",
-"hexagonal_toy",
-"jug01",
-"moet_chandon_bottle_vray",
-"orange",
-"star_wood_block"]
+    
     O_X = -1.3
     O_Z = -2.15
 
@@ -62,18 +52,10 @@ class Containment(Runner):
         self.add_ons.append(camera)
 
     def trial_initialization_commands(self):
-        # Teleport the avatar.
-        # Look at the target aim-point.
-        commands = [
-            # {"$type": "teleport_avatar_to",
-            #          "position": {"x": -0.625, "y": 2.0, "z": -0.7}},
-            #         {"$type": "look_at_position",
-            #          "position": {"x": -1.0, "y": 1.0, "z": -1.5}}
-                     ]
-
+        commands = []
         # Select a container.
         # Manually set the mass of the container.
-        container_name = choice(Containment.CONTAINERS)
+        container_name = choice(CONTAINERS)
         container_scale = TDWUtils.get_unit_scale(PHYSICS_INFO[container_name].record) * 0.6
         container_id = self.get_unique_id()
         commands.extend(self.get_add_physics_object(model_name=container_name,
@@ -86,8 +68,9 @@ class Containment(Runner):
                                                     scale_factor={"x": container_scale,
                                                                   "y": container_scale,
                                                                   "z": container_scale}))
+        
         # Add a random target object, with random size, mass, bounciness and initial orientation.
-        object_name = choice(Containment.OBJECTS)
+        object_name = choice(CONTAINED)
         o_id = self.get_unique_id()
         o_record = Controller.MODEL_LIBRARIANS["models_core.json"].get_record(object_name)
         o_scale = TDWUtils.get_unit_scale(o_record) * uniform(0.2, 0.3)
@@ -108,66 +91,10 @@ class Containment(Runner):
                                                     static_friction=uniform(0.1, 0.5),
                                                     bounciness=uniform(0.5, 0.95),
                                                     scale_factor={"x": o_scale, "y": o_scale, "z": o_scale}))
-        # Let the objects settle.
-        commands.append({"$type": "step_physics",
-                         "frames": self.framerate})
-        del self._shake_commands[:]
-        # Set the shake commands.
-        # Shake the container.
-        for i in range(25):
-            forceval = uniform(-1.5, 1.5)
-            rot_axis = choice(["pitch", "roll", "yaw"])
-            rotval = uniform(-2, 2)
-            # Shake the container.
-            for i in range(3):
-                self._shake_commands.append([{"$type": "apply_force_to_object",
-                                              "force": {"x": forceval, "y": 0, "z": 0},
-                                              "id": container_id},
-                                             {"$type": "rotate_object_by",
-                                              "angle": rotval,
-                                              "id": container_id,
-                                              "axis": rot_axis,
-                                              "is_world": False}])
-            # Reset the rotation.
-            for i in range(10):
-                self._shake_commands.append([{"$type": "rotate_object_to",
-                                              "rotation": {"w": 1, "x": 0, "y": 0, "z": 0},
-                                              "id": container_id}])
-            # Shake some more.
-            for i in range(3):
-                self._shake_commands.append([{"$type": "apply_force_to_object",
-                                              "force": {"x": 0, "y": 0, "z": forceval},
-                                              "id": container_id},
-                                             {"$type": "rotate_object_by",
-                                              "angle": rotval,
-                                              "id": container_id,
-                                              "axis": rot_axis,
-                                              "is_world": False}])
-            # Reset the rotation.
-            for i in range(10):
-                self._shake_commands.append([{"$type": "rotate_object_to",
-                                              "rotation": {"w": 1, "x": 0, "y": 0, "z": 0},
-                                              "id": container_id}])
-            # Shake some more.
-            for i in range(4):
-                self._shake_commands.append([{"$type": "apply_force_to_object",
-                                              "force": {"x": 0, "y": -forceval * 2.0, "z": 0},
-                                              "id": container_id},
-                                             {"$type": "rotate_object_by",
-                                              "angle": rotval,
-                                              "id": container_id,
-                                              "axis": rot_axis,
-                                              "is_world": False}])
-            # Reset the rotation.
-            for i in range(10):
-                self._shake_commands.append([{"$type": "rotate_object_to",
-                                              "rotation": {"w": 1, "x": 0, "y": 0, "z": 0},
-                                              "id": container_id}])
-        self._max_num_frames = len(self._shake_commands) + 500
 
         return commands
 
 if __name__ == "__main__":
     c = Containment()
-    success = c.run(num=5, pass_masks=['_img', '_id'], room='empty', tot_frames=800, add_slope=False, trial_type='object')
+    success = c.run(num=5, pass_masks=['_img'] , room='empty', tot_frames=800, add_slope=False, trial_type='object')
     print(success)
