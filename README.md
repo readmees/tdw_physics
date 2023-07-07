@@ -1,5 +1,5 @@
 # TDW Trials
-Implements automated generation of object, agent and transition based videos in TDW
+Implements automated generation of object, agent and transition based videos in TDW  
 Note: internet connection needed
 
 ## Object based trials
@@ -42,7 +42,12 @@ cd controllers
 A lot of this code is from the [tdw_physics](https://github.com/alters-mit/tdw_physics) repository, Copyright (c) 2021 Seth Alter
 
 ## Notes
-- Not all the scenes are tested, trials are tested in empty room, so objects might spawn in walls etc. or empty frames mith be 
+- Not all the scenes are tested, trials are tested in empty room, so objects might spawn in walls etc. or empty frames mith be
+- Occlusion trials do NOT work for other rooms then empty room (yet)
+ - tdw_room gives a weird 'shine' with the windows
+ - box_room_2018 might have too much friction for the current forces because of the carpet
+- Masses of all occluding objects are the same now, this should be fixed in next version
+- Many colliding objects appear too bouncy when falling down
 
 ## TODO
 - ~~Streamline platform~~
@@ -52,6 +57,6 @@ A lot of this code is from the [tdw_physics](https://github.com/alters-mit/tdw_p
 - ~~Chose better objects~~
 - ~~Make a objectshower or use the TDW objectshower~~
 - ~~Implement rolling down controller~~
-- Improve occlusion: don't stop behind object, but behind object in line with camera angle
+- ~~Improve occlusion: don't stop behind object, but behind object in line with camera angle~~
 - ~~Improve occlusion: in objectbased, use force~~
-- Improve containment: fix object in place
+- Use real masses for occluding
