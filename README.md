@@ -60,3 +60,4 @@ A lot of this code is from the [tdw_physics](https://github.com/alters-mit/tdw_p
 - ~~Improve occlusion: don't stop behind object, but behind object in line with camera angle~~
 - ~~Improve occlusion: in objectbased, use force~~
 - Use real masses for occluding
+- Get real height and width of objects
