@@ -131,6 +131,14 @@ class Runner(Controller):
             # Show progress
             message(f'Progress trials ({trial_num+1}/{num})', 'success', round((trial_num+1)/num*10))
 
+        destroy_commands = []
+        for scene_o_id in self.scene_o_ids:
+            print('destroyed')
+            destroy_commands.append({"$type": "destroy_flex_object",
+                            "id": scene_o_id})
+            destroy_commands.append({"$type": "unload_asset_bundles"})
+        self.communicate(destroy_commands)
+
     def run(self, num=5, trial_type='object', png=False, pass_masks=["_img", "_mask"], framerate = 30, room='random', 
             tot_frames=200, add_object_to_scene=False, num_redo=1):
         '''
@@ -165,7 +173,7 @@ class Runner(Controller):
         
         
         # Define path for output data frames
-        path_main = '../data_temp'
+        path_main = '../data_publish'
         paths = [f'{path_main}/{name}/{self.controller_name}/{trial_type}' for name in ['backgrounds', 'videos']]
         path_backgr, path_videos = paths
         path_frames = f'{path_main}/frames_temp'

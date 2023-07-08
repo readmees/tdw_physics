@@ -42,6 +42,7 @@ class Containment(Runner):
             patience = random.randint(20, 40)
 
             commands = []
+            transitions_avoided = 0
             for i in range(tot_frames):
                 print(i)
                 resp = self.communicate(commands)
@@ -124,7 +125,7 @@ class Containment(Runner):
         
         balancer_scale = .45
         object_id = self.get_unique_id()
-
+        
         # Add the object
         commands.extend(self.get_add_physics_object(model_name=balancer_name,
                                                 library="models_flex.json",
@@ -144,6 +145,8 @@ class Containment(Runner):
         commands.append({"$type": "set_color",
                         "color": {"r": random.random(), "g": random.random(), "b": random.random(), "a": 1.0},
                         "id": object_id})
+        
+        self.scene_o_ids = [object_id]
         return commands
     
     def set_camera(self):
@@ -195,5 +198,5 @@ class Containment(Runner):
 
 if __name__ == "__main__":
     c = Containment()
-    success = c.run(num=10, pass_masks=['_img'] , room='empty', tot_frames=1000, add_object_to_scene=True, trial_type='object', num_redo=500)
+    success = c.run(num=1, pass_masks=['_img'] , room='empty', tot_frames=3, add_object_to_scene=True, trial_type='object', num_redo=500)
     print(success)
