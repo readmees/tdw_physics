@@ -195,5 +195,5 @@ class Containment(Runner):
 
 if __name__ == "__main__":
     c = Containment()
-    success = c.run(num=5, pass_masks=['_img'] , room='empty', tot_frames=400, add_object_to_scene=True, trial_type='transition')
+    success = c.run(num=10, pass_masks=['_img'] , room='empty', tot_frames=1000, add_object_to_scene=True, trial_type='object', num_redo=500)
     print(success)

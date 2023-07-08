@@ -56,37 +56,16 @@ class Runner(Controller):
                            avatar_id='frames_temp')
         self.add_ons.append(self.camera)
     
-    def run(self, num=5, trial_type='object', png=False, pass_masks=["_img", "_mask"], framerate = 30, room='random', 
+    def subrun(self, commands, num=5, trial_type='object', png=False, pass_masks=["_img", "_mask"], framerate = 30, room='random', 
             tot_frames=200, add_object_to_scene=False):
-        '''
-        param num: the number of trials
-        param trial_type: you can choose if you would like to run an trial object, agent or transition based
-        param png: If True, images will be lossless png files. Usually jpg should be enough, but only works for _img
-        param pass_masks: segmentation data and much more, see: https://github.com/threedworld-mit/tdw/blob/master/Documentation/api/command_api.md#set_pass_masks
-        param framerate: target framerate and fps of video, should be int
-        param room: can be any of the specified scene names, 'empty' will create an empty room, 'random_unsafe' pick a random room which is not safe,
-                    because not all rooms are tested
-        param tot_frames: circa nummer of frames per trials #NOTE this is not the exact number of frames 
-        param add_object_to_scene: add objects to the scene (and background), add slope to the background, for rolling down trials
-        '''
-        # Check if input Camera params are valid
-        if not isinstance(pass_masks, list):
-            return message("pass_masks should be list", 'error')
-        if not png and pass_masks != ["_img"]:
-            print(message("jpg only implemented for image mask", 'warning'))
-        masks_options = ['_albedo', '_flow', '_normals', '_depth_simple', '_depth', '_mask', '_category', '_id', '_img']
-        for mask_type in pass_masks:
-            if mask_type not in masks_options:
-                return message(f'{mask_type} not in {masks_options}', 'error')
-        if len(set(pass_masks)) != len(pass_masks):
-            return message('pass_mask cannot contain any double masks', 'error')
-        
-        if tot_frames < 100 and trial_type=='transition':
-            return message('Use at least 100 frames for a transition', 'error')
-        
-        #TODO check input for all params
-        self.framerate = framerate
-        
+                # Define path for output data frames
+        controller_name = self.controller_name
+        path_main = '../data_publish'
+        paths = [f'{path_main}/{name}/{controller_name}/{trial_type}' for name in ['backgrounds', 'videos']]
+        path_backgr, path_videos = paths
+        path_frames = f'{path_main}/frames_temp'
+        paths.append(path_frames)
+        trial_id = self.trial_id
         # Clear the list of add-ons.
         self.add_ons.clear()
 
@@ -94,49 +73,17 @@ class Runner(Controller):
         self.set_camera()
         controller_name = self.controller_name
         
-        # Define path for output data frames
-        path_main = '../data_published'
-        paths = [f'{path_main}/{name}/{controller_name}/{trial_type}' for name in ['backgrounds', 'videos']]
-        path_backgr, path_videos = paths
-        path_frames = f'{path_main}/frames_temp'
-        paths.append(path_frames)
-
-        # Remove previous frames (if possible) 
-        #NOTE: could be more efficient, because frames folder gets recreated
-        try:
-            shutil.rmtree(path_frames)
-        except FileNotFoundError:
-             pass
-        
-        # Make sure paths exist
-        for path in paths:
-            os.makedirs(path, exist_ok=True)
-
-        # Generate random id for this set of trials, and output for user
-        #NOTE: in theory two trials could have the same random id 
-        trial_id = random.randint(10**16, 10**17-1) 
-        print(f'The random id of this set of trials will be {trial_id}')
-        
         # Save 'normal' output images/frames_temp for video
         self.add_ons.append(ImageCapture(path=path_main+'/', avatar_ids=['frames_temp'], png=png, pass_masks=pass_masks))
-        
-        # Create room
-        lib = SceneLibrarian(library="scenes.json")
-        scene_names = [record.name for record in lib.records]
-        if room == 'empty':
-            commands = [TDWUtils.create_empty_room(12, 12)]
-        elif room in scene_names or room == 'random':
-            scene_name = random.choice(scene_names) if room == 'random' else room
-            print('The name of the selected scene is:', scene_name)
-            commands = [self.get_add_scene(scene_name=scene_name)]
-        else:
-            return message(f"param room should be 'empty', 'random' or any of the following names: \n {scene_names}", 'error')
 
         # Set target framerate
         commands.append({"$type": "set_target_framerate",
                         "framerate": framerate})
         
-        # Add slope to the background, if param add_object_to_scene is true
+        #########____________________#########
+
+       
+          # Add slope to the background, if param add_object_to_scene is true
         if isinstance(add_object_to_scene, bool):
             if add_object_to_scene:
                 commands = self.add_object_to_scene(commands)
@@ -183,6 +130,81 @@ class Runner(Controller):
 
             # Show progress
             message(f'Progress trials ({trial_num+1}/{num})', 'success', round((trial_num+1)/num*10))
+
+    def run(self, num=5, trial_type='object', png=False, pass_masks=["_img", "_mask"], framerate = 30, room='random', 
+            tot_frames=200, add_object_to_scene=False, num_redo=1):
+        '''
+        param num: the number of trials
+        param trial_type: you can choose if you would like to run an trial object, agent or transition based
+        param png: If True, images will be lossless png files. Usually jpg should be enough, but only works for _img
+        param pass_masks: segmentation data and much more, see: https://github.com/threedworld-mit/tdw/blob/master/Documentation/api/command_api.md#set_pass_masks
+        param framerate: target framerate and fps of video, should be int
+        param room: can be any of the specified scene names, 'empty' will create an empty room, 'random_unsafe' pick a random room which is not safe,
+                    because not all rooms are tested
+        param tot_frames: circa nummer of frames per trials #NOTE this is not the exact number of frames 
+        param add_object_to_scene: add objects to the scene (and background), add slope to the background, for rolling down trials
+        param num_redo: the number of trials to redo
+        '''
+        # Check if input Camera params are valid
+        if not isinstance(pass_masks, list):
+            return message("pass_masks should be list", 'error')
+        if not png and pass_masks != ["_img"]:
+            print(message("jpg only implemented for image mask", 'warning'))
+        masks_options = ['_albedo', '_flow', '_normals', '_depth_simple', '_depth', '_mask', '_category', '_id', '_img']
+        for mask_type in pass_masks:
+            if mask_type not in masks_options:
+                return message(f'{mask_type} not in {masks_options}', 'error')
+        if len(set(pass_masks)) != len(pass_masks):
+            return message('pass_mask cannot contain any double masks', 'error')
+        
+        if tot_frames < 100 and trial_type=='transition':
+            return message('Use at least 100 frames for a transition', 'error')
+        
+        #TODO check input for all params
+        self.framerate = framerate
+        
+        
+        # Define path for output data frames
+        path_main = '../data_temp'
+        paths = [f'{path_main}/{name}/{self.controller_name}/{trial_type}' for name in ['backgrounds', 'videos']]
+        path_backgr, path_videos = paths
+        path_frames = f'{path_main}/frames_temp'
+        paths.append(path_frames)
+
+        # Remove previous frames (if possible) 
+        #NOTE: could be more efficient, because frames folder gets recreated
+        try:
+            shutil.rmtree(path_frames)
+        except FileNotFoundError:
+             pass
+        
+        # Make sure paths exist
+        for path in paths:
+            os.makedirs(path, exist_ok=True)
+
+        # Generate random id for this set of trials, and output for user
+        #NOTE: in theory two trials could have the same random id 
+        self.trial_id = random.randint(10**16, 10**17-1) 
+        trial_id = self.trial_id
+        print(f'The random id of this set of trials will be {trial_id}')
+                
+        # Create room
+        lib = SceneLibrarian(library="scenes.json")
+        scene_names = [record.name for record in lib.records]
+        if room == 'empty':
+            commands = [TDWUtils.create_empty_room(12, 12)]
+        elif room in scene_names or room == 'random':
+            scene_name = random.choice(scene_names) if room == 'random' else room
+            print('The name of the selected scene is:', scene_name)
+            commands = [self.get_add_scene(scene_name=scene_name)]
+        else:
+            return message(f"param room should be 'empty', 'random' or any of the following names: \n {scene_names}", 'error')
+        
+        self.trial_id = str(trial_id) + '_set0'
+        for i in range(num_redo):
+            self.trial_id = self.trial_id[:-1] + str(i)
+            self.subrun(commands, num, trial_type, png, pass_masks, framerate, room, 
+                tot_frames, add_object_to_scene)
             
         self.communicate({"$type": "terminate"})
 
