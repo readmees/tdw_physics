@@ -81,6 +81,9 @@ class Runner(Controller):
         if len(set(pass_masks)) != len(pass_masks):
             return message('pass_mask cannot contain any double masks', 'error')
         
+        if tot_frames < 100 and trial_type=='transition':
+            return message('Use at least 100 frames for a transition', 'error')
+        
         #TODO check input for all params
         self.framerate = framerate
         
@@ -92,7 +95,7 @@ class Runner(Controller):
         controller_name = self.controller_name
         
         # Define path for output data frames
-        path_main = '../data_publish'
+        path_main = '../data_published'
         paths = [f'{path_main}/{name}/{controller_name}/{trial_type}' for name in ['backgrounds', 'videos']]
         path_backgr, path_videos = paths
         path_frames = f'{path_main}/frames_temp'

@@ -1,10 +1,19 @@
 from typing import Dict
 import numpy as np
 import random
-from tdw.controller import Controller
 import ffmpeg
 import sys
 
+# For get_two_random_records()
+from tdw.librarian import ModelLibrarian
+from tdw.tdw_utils import TDWUtils
+
+# For get_sleeping() and get_transforms()
+from tdw.output_data import OutputData, Transforms, Rigidbodies
+
+
+# For rotation in degrees (get_transforms)
+from scipy.spatial.transform import Rotation
 
 class ObjectInfo:
     """
@@ -107,10 +116,6 @@ def message(message, message_type, progress=None):
         
     return formatted_message+"\r"
 
-# For get_two_random_records()
-from tdw.librarian import ModelLibrarian
-from tdw.tdw_utils import TDWUtils
-
 def get_record_with_name(name):
     '''Get record of object by name
     param name: type str, should be in models_full.json
@@ -156,3 +161,40 @@ def get_two_random_records(smaller_list, larger_list, axis = [0, 1, 2]):
                 # Return objects if all relevant axis are larger
                 if axis_met == axis:
                     return [o_smaller_rec, o_larger_rec], [bounds_extents_small, bounds_extents_large]
+                
+def get_sleeping(resp, o_id):
+    ''' This function finds out if an object is sleeping or not
+    param resp: responce of the last communicate
+    o_id: type int, should be the '''
+    #NOTE: does not always work
+    sleeping = False
+    for i in range(len(resp) - 1):
+        r_id = OutputData.get_data_type_id(resp[i])
+        if r_id == "rigi":
+            rigidbodies = Rigidbodies(resp[i])
+            for j in range(rigidbodies.get_num()):
+                if rigidbodies.get_id(j) == o_id:
+                    sleeping = rigidbodies.get_sleeping(j)
+    return sleeping
+
+def get_transforms(resp, o_id):
+    ''' Get position and rotation of object with object id o_id'''
+    for i in range(len(resp) - 1):
+        r_id = OutputData.get_data_type_id(resp[i])
+        # Parse Transforms output data to get the object's position.
+        if r_id == "tran":
+            transforms = Transforms(resp[i])
+            for j in range(transforms.get_num()):
+                if transforms.get_id(j) == o_id:
+                    o_position = transforms.get_position(j)
+                    q = transforms.get_rotation(j)
+                    
+                    # Create a Rotation object from the quaternion #NOTE: by ChatGPT might be wrong
+                    r = Rotation.from_quat(q)
+
+                    # Convert the rotation to Euler angles (in radians) #NOTE: by ChatGPT might be wrong
+                    euler_angles = r.as_euler('xyz')
+
+                    # Convert the Euler angles to degrees #NOTE: by ChatGPT might be wrong
+                    o_rotation_deg = np.degrees(euler_angles)
+    return o_rotation_deg, o_position
