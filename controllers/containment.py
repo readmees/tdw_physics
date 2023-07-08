@@ -1,11 +1,12 @@
 # STATUS: V1 Experimental
 '''
 Readme:
-The core of of this code is taken from tdw_physics, from containment.py and stability.py
+The core of of this code is taken from tdw_physics, from containment.py 
 tdw_physics uses custom/random physics, here we use the default
+Now the transition is a force, of course teleport could make sense as well
 
 Possible improvements:
-Object should not transition when out of container
+
 '''
 from typing import List
 from random import choice, uniform
@@ -42,38 +43,60 @@ class Containment(Runner):
 
             commands = []
             for i in range(tot_frames):
+                print(i)
                 resp = self.communicate(commands)
-                o_rotation_deg, o_position = get_transforms(resp, self.o_ids[0])
+                commands = []
+                o_rotation_deg, container_position = get_transforms(resp, self.o_ids[0])
                 rotations.append(o_rotation_deg)
-                positions.append(o_position)
+                positions.append(container_position)
 
-                # Only look back at the last x frames
+                # Only look back at the last x frames and only consider transition after x frames
                 if len(rotations) == patience:
                     # See if the container stopped mostly shaking the last x frames
                     rotation_sleep = np.array([np.std(np.array(rotations)[:,i]) < .1 for i in range(3)]).all()
                     positions_sleep = np.array([np.std(np.array(positions)[:,i]) < .1 for i in range(3)]).all()
-
+                    
                     if rotation_sleep and positions_sleep:
-                        print('transition!!!')
                         # Get position of transtions object
                         o_position = get_transforms(resp, self.o_ids[1])[1]
               
-                        commands.append({"$type": "object_look_at_position",
-                                        "position":  {"x": random.uniform(-10, 10), "y": random.uniform(0, o_position[1]), "z": random.uniform(-10, 10)},
-                                        
-                                        "id": self.o_ids[1]})
+                        # Check how far away the object is from the center of the container
+                        o_relative_position = np.abs(np.array(container_position) - np.array(o_position))
 
-                        # Apply a force to the object
-                        commands.append({"$type": "apply_force_magnitude_to_object",
-                                        "magnitude": random.uniform(0.4, 2),
-                                        "id": self.o_ids[1]})
+                        # Get roughly the maximum discance the object may be from the center
+                        # Moreover, for x and z this is to the border of the container,
+                        # for y, this is halfway the container
+                        max_distance = np.abs(np.array([bound for bound in self.bounds[1]]))
 
-                        # Reset patience before next transition starts
-                        rotations, positions = [], []
-                        patience = random.randint(20, 40)
-                    else:
-                        # No transition
-                        commands = []
+                        # Activatie transition only if the object is inside container #NOTE this is not perfect
+                        activate_transition = (o_relative_position<max_distance).all()
+
+                        if activate_transition:
+                            print('transition!!!')
+                            # commands.append({"$type": "object_look_at_position",
+                            #                 "position":  {"x": random.uniform(-10, 10), 
+                            #                               "y": random.uniform(0, o_position[1]), 
+                            #                               "z": random.uniform(-10, 10)},
+                            #                 "id": self.o_ids[1]})
+
+
+                            # Apply a force to the object
+                            force =  random.uniform(4, 20)
+                            commands.append({"$type": "apply_force_at_position", 
+                                             "id": self.o_ids[1], 
+                                             "force": {"x":force, "y": 0, "z": force}, 
+                                             "position": {"x": random.uniform(-10, 10), 
+                                                        "y": 0, 
+                                                        "z": random.uniform(-10, 10)}})
+
+                            # Reset patience before next transition starts
+                            rotations, positions = [], []
+                            patience = random.randint(20, 40)
+                            transitions_avoided = 0
+                        else:
+                            transitions_avoided += 1 
+                            if transitions_avoided > 10:
+                                break
 
                     # Make room for the next frame
                     rotations, positions = rotations[1:], positions[1:]
@@ -134,7 +157,7 @@ class Containment(Runner):
     def trial_initialization_commands(self):
         commands = []
         # Select a random container and contained object
-        records = get_two_random_records(smaller_list=CONTAINED, larger_list=CONTAINERS)[0]
+        records, self.bounds = get_two_random_records(smaller_list=CONTAINED, larger_list=CONTAINERS)
         
         # Select a container.
         # Manually set the mass of the container.
