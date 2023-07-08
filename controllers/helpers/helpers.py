@@ -107,3 +107,52 @@ def message(message, message_type, progress=None):
         
     return formatted_message+"\r"
 
+# For get_two_random_records()
+from tdw.librarian import ModelLibrarian
+from tdw.tdw_utils import TDWUtils
+
+def get_record_with_name(name):
+    '''Get record of object by name
+    param name: type str, should be in models_full.json
+    '''
+    lib = ModelLibrarian('models_full.json')
+    records = {record.name:record for record in lib.records}
+    return records[name]
+        
+def get_two_random_records(smaller_list, larger_list, axis = [0, 1, 2]):
+        '''This method gets two objects, where one is smaller then the other
+
+        param smaller_list: record list where a random smaller object will be selected (e.g. occluded)
+        param larger_list: record list where a random larger object will be selected (e.g. occluder)
+        param axis: decides if x, y and/or z should be larger
+
+        returns: 1. a list of the record of the smaller object and the record of the larger object
+                 2. a list of the bounds extends, [bounds_extents_small, bounds_extents_large]
+        ''' 
+        #NOTE this will create an infinite loop if all smaller objects are larger then the larger objects
+        while True:
+            # Choose a random smaller object
+            o_smaller_name = random.choice(smaller_list)
+            o_smaller_rec = get_record_with_name(o_smaller_name)
+
+            # Get height and width of moving object #TODO check this formula
+            bounds_extents_small = TDWUtils.get_bounds_extents(o_smaller_rec.bounds)
+
+            # Loop through random occluder objects without putting back
+            random.shuffle(larger_list)
+            for name in larger_list:
+                # Get record of moving object
+                o_larger_rec = get_record_with_name(name)
+
+                # Calculate height and width of occluder #TODO check this formula
+                bounds_extents_large = TDWUtils.get_bounds_extents(o_larger_rec.bounds)
+
+                # Check if the larger object is larger for all relevant axis
+                axis_met = []
+                for i in axis:
+                    if bounds_extents_large[i] > bounds_extents_small[i]:
+                        axis_met.append(i)
+
+                # Return objects if all relevant axis are larger
+                if axis_met == axis:
+                    return [o_smaller_rec, o_larger_rec], [bounds_extents_small, bounds_extents_large]

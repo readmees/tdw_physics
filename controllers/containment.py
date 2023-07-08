@@ -41,43 +41,6 @@ class Containment(Runner):
         #     # All containers have the same physics values. Set these manually.
         #     if key in Containment.CONTAINERS:
         #         PHYSICS_INFO[key].mass = 3
-
-    def get_two_random_records(self):
-        '''This method gets two objects, where 
-        container is bigger in width and height''' 
-        # Store globals in locals, so we can remove objects temporary
-        # Choose a random moving object
-        o_contained_name = random.choice(CONTAINED)
-
-        # Get record of moving object
-        rec_moving = self.records[CONTAINED_DICT[o_moving_name]]
-
-        # Get height and width of moving object #TODO check this formula
-        height_moving = abs(rec_moving.bounds['top']['y'] - rec_moving.bounds['bottom']['y'])
-        width_moving = abs(rec_moving.bounds['left']['z'] - rec_moving.bounds['right']['z'])
-
-        # Make sure the occluding object covers the other object
-        while True:
-            # Choose a random occluder object without putting back
-            o_occlu_name = random.choice(occluders)
-            occluders.remove(o_occlu_name)
-            
-            # Get record of moving object
-            rec_occlu = self.records[OCCLUDERS_DICT[o_occlu_name]]
-
-            # Calculate height and width of occluder #TODO check this formula
-            height_occl = abs(rec_occlu.bounds['top']['y'] - rec_occlu.bounds['bottom']['y'])
-
-            #NOTE TODO Somehow width is often 0
-            width_occl = abs(rec_occlu.bounds['left']['z'] - rec_occlu.bounds['right']['z'])
-
-            #NOTE TODO Somehow width is often 0
-            if height_occl > height_moving:
-                return [rec_moving, rec_occlu], [height_occl, width_moving]
-            
-            # If none of records is bigger then moving object
-            if not occluders:
-                return [], [height_occl, width_moving]
             
     def set_camera(self):
         ''' The avatar_id of the camera should be 'frames_temp' '''

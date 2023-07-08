@@ -22,7 +22,7 @@ from typing import Dict
 import random
 from helpers.runner_main import Runner
 from helpers.objects import *
-from helpers.helpers import message
+from helpers.helpers import message, get_two_random_records
 
 # To keep track of where the moving objects is
 from tdw.output_data import Transforms, OutputData
@@ -40,53 +40,14 @@ class Occlusion(Runner):
         self.camera_pos = {"x": random.uniform(1.5, 2), "y": 0.1, "z": random.uniform(-1, 1)}
 
         super().__init__(port=port)
-
-    def get_two_random_records(self):
-        '''This method gets two objects, where 
-        occluder is bigger in width and height''' 
-        # Store globals in locals, so we can remove objects temporary
-        occluded, occluders = list(set(OCCLUDED.copy())), list(set(OCCLUDERS.copy()))
-        
-        # Choose a random moving object
-        o_moving_name = random.choice(occluded)
-
-        # Get record of moving object
-        rec_moving = self.records[OCCLUDED_DICT[o_moving_name]]
-
-        # Get height and width of moving object #TODO check this formula
-        height_moving = abs(rec_moving.bounds['top']['y'] - rec_moving.bounds['bottom']['y'])
-        width_moving = abs(rec_moving.bounds['left']['z'] - rec_moving.bounds['right']['z'])
-
-        # Make sure the occluding object covers the other object
-        while True:
-            # Choose a random occluder object without putting back
-            o_occlu_name = random.choice(occluders)
-            occluders.remove(o_occlu_name)
-            
-            # Get record of moving object
-            rec_occlu = self.records[OCCLUDERS_DICT[o_occlu_name]]
-
-            # Calculate height and width of occluder #TODO check this formula
-            height_occl = abs(rec_occlu.bounds['top']['y'] - rec_occlu.bounds['bottom']['y'])
-
-            #NOTE TODO Somehow width is often 0
-            width_occl = abs(rec_occlu.bounds['left']['z'] - rec_occlu.bounds['right']['z'])
-
-            #NOTE TODO Somehow width is often 0
-            if height_occl > height_moving:
-                return [rec_moving, rec_occlu], [height_occl, width_moving]
-            
-            # If none of records is bigger then moving object
-            if not occluders:
-                return [], [height_occl, width_moving]
             
     def add_occ_objects(self):
         '''This method adds two objects to the scene, one moving and one occluder'''
         records, commands = [], []
 
-        # There might a occluding object that is bigger then any occluders, in this case try again
-        while not records:
-            records, heights = self.get_two_random_records()
+        # Random occluded and occluder object, where occluded object is smaller
+        records, bounds = get_two_random_records(OCCLUDED, OCCLUDERS)
+
         self.names = [record.name for record in records]
         for i, record in enumerate(records):
 
@@ -110,7 +71,7 @@ class Occlusion(Runner):
                                                         static_friction=0.9,
                                                         mass = 1 # TODO, use real scale
                                                         ))
-        return commands, heights
+        return commands, bounds
     
     def set_camera(self):
         # Add camera
@@ -209,7 +170,7 @@ class Occlusion(Runner):
         # Add objects and their ids, first id is moving object, second collider
         self.o_ids = [self.get_unique_id(), self.get_unique_id()]
         moving_o_id = self.o_ids[0]
-        commands, heights = self.add_occ_objects()
+        commands, bounds = self.add_occ_objects()
 
         # Teleport camera same distance from occluder as moving object
         #TODO change height depending on height objects
@@ -217,7 +178,7 @@ class Occlusion(Runner):
         self.camera_pos['x'] = -self.o_moving_loc['x']
 
         # Float somewhere between the ground and occluder height
-        self.camera_pos['y'] = random.uniform(0.01, np.mean(heights))
+        self.camera_pos['y'] = random.uniform(0.01, np.mean(bounds[1][1]))
         self.camera.teleport(position=self.camera_pos)
 
         # Rotate camera to occluding object
@@ -247,7 +208,7 @@ class Occlusion(Runner):
 
 if __name__ == "__main__":
     c = Occlusion()
-    success = c.run(num=500, pass_masks=['_img', '_mask'], room='empty', tot_frames=160, add_object_to_scene=False, trial_type='object', png=False)
+    success = c.run(num=500, pass_masks=['_img', '_mask'], room='empty', tot_frames=160, add_object_to_scene=False, trial_type='transition', png=False)
     # The commented code only works for other masks then _img
     # for i in range(30):
     #     c = Occlusion(port=1000+i)
