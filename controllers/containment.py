@@ -2,6 +2,7 @@
 '''
 Readme:
 The core of of this code is taken from tdw_physics, from containment.py and stability.py
+tdw_physics uses custom/random physics, here we use the default
 
 Possible improvements:
 Shaking doesn't work yet
@@ -20,6 +21,7 @@ import random
 
 from helpers.runner_main import Runner
 from helpers.objects import CONTAINERS, CONTAINED
+from helpers.helpers import get_two_random_records
 class Containment(Runner):
     """
     Create a set of "Containment" trials, where a container object holds a smaller target
@@ -32,23 +34,8 @@ class Containment(Runner):
     O_Z = -2.15
 
     def __init__(self, port: int = 1071):
-        super().__init__(port=port)
-
         self.controller_name = 'containment'
-
-        #TODO not sure if we need to use the rest from tdw_physics:
-        # for key in PHYSICS_INFO:
-        #     # All containers have the same physics values. Set these manually.
-        #     if key in Containment.CONTAINERS:
-        #         PHYSICS_INFO[key].mass = 3
-            
-    def set_camera(self):
-        ''' The avatar_id of the camera should be 'frames_temp' '''
-        # Add camera
-        camera = ThirdPersonCamera(position={"x": -0.625, "y": 2.0, "z": -0.7},
-                           look_at={"x": -1.0, "y": 1.0, "z": -1.5},
-                           avatar_id='frames_temp')
-        self.add_ons.append(camera)
+        super().__init__(port=port)
 
     def add_object_to_scene(self, commands):
         '''This method will add a fixed object to the scene that the container has something to balance/shake on,
@@ -79,29 +66,35 @@ class Containment(Runner):
                         "id": object_id})
         return commands
     
+    def set_camera(self):
+        ''' The avatar_id of the camera should be 'frames_temp' '''
+        # Add camera
+        camera = ThirdPersonCamera(position={"x": uniform(-1,0), "y": uniform(1.8,2.2), "z": uniform(-1, 0)},
+                           look_at={"x": -1.0, "y": 1.0, "z": -1.5},
+                           avatar_id='frames_temp')
+        self.add_ons.append(camera)
+
     def trial_initialization_commands(self):
         commands = []
+        # Select a random container and contained object
+        records = get_two_random_records(smaller_list=CONTAINED, larger_list=CONTAINERS)[0]
+        
         # Select a container.
         # Manually set the mass of the container.
-        container_name = choice(CONTAINERS)
-        container_scale = 1
         container_id = self.get_unique_id()
-        commands.extend(self.get_add_physics_object(model_name=container_name,
+        commands.extend(self.get_add_physics_object(model_name=records[1].name,
                                                     library="models_core.json",
                                                     object_id=container_id,
                                                     position={"x": Containment.O_X,
                                                               "y": 0.5,
                                                               "z": Containment.O_Z},
-                                                    rotation=TDWUtils.VECTOR3_ZERO,
-                                                    scale_factor={"x": container_scale,
-                                                                  "y": container_scale,
-                                                                  "z": container_scale}))
+                                                    rotation={"x": uniform(-10, 10),
+                                                              "y": uniform(-10, 10),
+                                                              "z": uniform(-10, 10)}))
         
         # Add a random target object, with random size, mass, bounciness and initial orientation.
-        object_name = choice(CONTAINED)
+        o_record = records[0]
         o_id = self.get_unique_id()
-        o_record = Controller.MODEL_LIBRARIANS["models_core.json"].get_record(object_name)
-        o_scale = 1
         self.o_ids = [o_id, container_id]
         commands.extend(self.get_add_physics_object(model_name=o_record.name,
                                                     library="models_core.json",
@@ -109,16 +102,9 @@ class Containment(Runner):
                                                     position={"x": Containment.O_X,
                                                               "y": 0.8,
                                                               "z": Containment.O_Z},
-                                                    rotation={"x": uniform(0, 360),
-                                                              "y": uniform(0, 360),
-                                                              "z": uniform(0, 360)},
-                                                    default_physics_values=False,
-                                                    scale_mass=False,
-                                                    mass=uniform(0.1, 0.5),
-                                                    dynamic_friction=uniform(0.1, 0.5),
-                                                    static_friction=uniform(0.1, 0.5),
-                                                    bounciness=uniform(0.5, 0.95),
-                                                    scale_factor={"x": o_scale, "y": o_scale, "z": o_scale}))
+                                                    rotation={"x": uniform(-45, 45),
+                                                              "y": uniform(-45, 45),
+                                                              "z": uniform(-45, 45)}))
 
         return commands
 

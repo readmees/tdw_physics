@@ -46,7 +46,7 @@ class Occlusion(Runner):
         records, commands = [], []
 
         # Random occluded and occluder object, where occluded object is smaller
-        records, bounds = get_two_random_records(OCCLUDED, OCCLUDERS)
+        records, bounds = get_two_random_records(smaller_list=OCCLUDED, larger_list=OCCLUDERS, axis=[1,2])
 
         self.names = [record.name for record in records]
         for i, record in enumerate(records):
@@ -100,16 +100,14 @@ class Occlusion(Runner):
         # Calculate z distance between occluder and camera
         stop_moving = np.abs(self.o_occl_loc_z - self.camera_pos['z'])
 
-
         # If occluder is on the left of the camera, moving object should stop on the right and vice versa
         if self.camera_pos['z'] > self.o_occl_loc_z:
-            print('camera is on the right of occluder, object stops on the left of occluder') 
+            # Camera is on the right of occluder, object stops on the left of occluder
             stop_moving = self.o_occl_loc_z - stop_moving
         else:
-            print('camera is on the left of occluder, object stops on the right of occluder')
+            # Camera is on the left of occluder, object stops on the right of occluder
             stop_moving = self.o_occl_loc_z + stop_moving
 
-        # stop_z = stop_z + self.o_occl_loc_z # if stop_z >= 0 else stop_z - self.o_occl_loc_z
         for i in range(tot_frames):
             # Check if this is object based or transition trial
             if trial_type == 'transition':
@@ -117,7 +115,6 @@ class Occlusion(Runner):
                 if self.o_moving_loc['z'] > stop_moving and self.direction == 'left' or self.o_moving_loc['z'] < stop_moving and self.direction == 'right':
                     commands = []
                     if not transition_compl:
-                        print('transitiontime')
                         # Choose between reverse random speed change, stop
                         speed = random.choice([random.uniform(0.01, 0.3), 0])
                         speed = speed if self.direction == 'right' else -speed                
