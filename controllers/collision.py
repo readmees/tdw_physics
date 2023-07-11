@@ -4,7 +4,7 @@ Readme:
 
 Possible improvements:
 Add rolling down collision
-Noise in possition could be dependend on width of objects
+Noise in position could be dependend on width of objects
 Random force positions could better
 '''
 # Added for collisions
@@ -91,7 +91,7 @@ class Collision(Runner):
         self.positions = self.set_fall_postions() if coll_type == 'fall' else self.set_force_positions()
 
         # To choose random object without putting back
-        self.objects = random.shuffle(self.objects)
+        random.shuffle(self.objects)
 
         commands = self.add_objects(commands=[])
         if coll_type == 'force':

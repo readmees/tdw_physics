@@ -7,7 +7,7 @@ from tdw.librarian import SceneLibrarian
 import shutil
 import random   
 import os
-from helpers.helpers import images_to_video, message
+from helpers.helpers import images_to_video, message, get_transforms
 import time
 from tdw.librarian import ModelLibrarian
 
@@ -39,6 +39,23 @@ class Runner(Controller):
         destroy_commands.append({"$type": "send_rigidbodies",
                             "frequency": "never"})
         self.communicate(destroy_commands)
+    
+    def get_transforms_by_run(self, o_id, commands):
+        '''Extension on get_transforms from helpers.helpers;
+        here frame actually gets created and removed to get output
+        Returns: commands, (rot, pos, mass)'''
+        # Run frame and get transforms
+        resp = self.communicate(commands)
+        transforms = get_transforms(resp, o_id)
+
+        # Delete frame that was created
+        path_frames = f'{self.path_main}/frames_temp'
+        shutil.rmtree(path_frames)
+        os.makedirs(path_frames, exist_ok=True)
+        
+        # Update commands, since they're already executed
+        commands = []
+        return commands, transforms
     
     def add_object_to_scene(self, commands = []):
         '''This method should be used to add a fixed object to the scene, since the object will not change 
@@ -80,7 +97,6 @@ class Runner(Controller):
                 return message(f'{mask_type} not in {masks_options}', 'error')
         if len(set(pass_masks)) != len(pass_masks):
             return message('pass_mask cannot contain any double masks', 'error')
-        
         if tot_frames < 100 and trial_type=='transition':
             return message('Use at least 100 frames for a transition', 'error')
         
@@ -95,7 +111,8 @@ class Runner(Controller):
         controller_name = self.controller_name
         
         # Define path for output data frames
-        path_main = '../data_published'
+        self.path_main = '../data_temp'
+        path_main = self.path_main
         paths = [f'{path_main}/{name}/{controller_name}/{trial_type}' for name in ['backgrounds', 'videos']]
         path_backgr, path_videos = paths
         path_frames = f'{path_main}/frames_temp'
@@ -170,6 +187,8 @@ class Runner(Controller):
             trial_commands = self.trial_initialization_commands()
             if not isinstance(trial_commands, list):
                 return trial_commands
+            
+            #TODO see if this is necessary
             self.communicate(trial_commands)
 
             self.run_per_frame_commands(trial_type=trial_type, tot_frames=tot_frames)

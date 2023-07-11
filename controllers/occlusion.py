@@ -22,24 +22,24 @@ from typing import Dict
 import random
 from helpers.runner_main import Runner
 from helpers.objects import *
-from helpers.helpers import message, get_two_random_records
+from helpers.helpers import message, get_two_random_records, get_transforms
 
 # To keep track of where the moving objects is
 from tdw.output_data import Transforms, OutputData
 from tdw.librarian import ModelLibrarian
 import numpy as np
-
-from tdw.object_data.object_static import ObjectStatic
+from tdw.tdw_utils import TDWUtils
 
 class Occlusion(Runner):
     def __init__(self, port=1071):
+        super().__init__(port=port)
         self.controller_name = 'occlusion'
         lib = ModelLibrarian('models_core.json')
         self.records = {record.name:record for record in lib.records}
-
+        print(type(self.records))
         self.camera_pos = {"x": random.uniform(1.5, 2), "y": 0.1, "z": random.uniform(-1, 1)}
 
-        super().__init__(port=port)
+        
             
     def add_occ_objects(self):
         '''This method adds two objects to the scene, one moving and one occluder'''
@@ -65,12 +65,7 @@ class Occlusion(Runner):
                                                         object_id=object_id,
                                                         position=position,
                                                         rotation={"x": 0, "y": rotation_y, "z": 0},
-                                                        scale_factor={"x": scale, "y": scale, "z": scale},
-                                                        default_physics_values=False,
-                                                        dynamic_friction=0.9,
-                                                        static_friction=0.9,
-                                                        mass = 1 # TODO, use real scale
-                                                        ))
+                                                        scale_factor={"x": scale, "y": scale, "z": scale}))
         return commands, bounds
     
     def set_camera(self):
@@ -80,20 +75,26 @@ class Occlusion(Runner):
                            avatar_id='frames_temp')
         self.add_ons.append(self.camera)
     
-    def get_ob_pos(self, o_id, resp):
-        '''Get object position'''
-        for i in range(len(resp) - 1):
-            r_id = OutputData.get_data_type_id(resp[i])
-            # Parse Transforms output data to get the object's position.
-            if r_id == "tran":
-                transforms = Transforms(resp[i])
-                for j in range(transforms.get_num()):
-                    if transforms.get_id(j) == o_id:
-                        # Return position of object with o_id as object id
-                        return transforms.get_position(j)
-        return message(f"{self.names[0]} does not have positions data, with occluder {self.names[1]}", 'error')
-
     def run_per_frame_commands(self, trial_type, tot_frames):
+        # # Find a suitable random magnitude depended on the scale of the object
+        moving_o_id = self.o_ids[0]
+        print('ok')
+        commands, transforms = self.get_transforms_by_run(moving_o_id, [])
+        print('ok')
+        
+        print(self.names[0], transforms)
+        mass = transforms[2]
+        magnitude_factor = TDWUtils.get_unit_scale(self.records[self.names[0]])
+        if mass != None:
+            print('finally')
+            magnitude_factor*=mass*10
+        magnitude = magnitude_factor*random.uniform(3, 4)
+
+        # Apply force
+        commands.append({"$type": "apply_force_magnitude_to_object",
+                          "magnitude": magnitude,
+                          "id": moving_o_id})
+        
         # Check if transition is done
         transition_compl = False             
         
@@ -134,7 +135,8 @@ class Occlusion(Runner):
 
                     # Update previous position with current position, only update z position 
                     # #NOTE: I assume here that the output of get_ob_pos is [x, y, z]
-                    for axis_name, axis_val in zip(['x', 'y', 'z'], self.get_ob_pos(self.o_ids[0], resp)):
+                    position = get_transforms(resp, self.o_ids[0])[1]
+                    for axis_name, axis_val in zip(['x', 'y', 'z'], position):
                         if isinstance(axis_val, str):
                             return axis_val
                         self.o_moving_loc[axis_name] = axis_val
@@ -152,8 +154,6 @@ class Occlusion(Runner):
         self.communicate(destroy_commands)
 
     def trial_initialization_commands(self):
-        '''
-        param path: "Images will be save to here"'''
         # Choose if the object should come from left or right
         self.direction = random.choice(['left', 'right'])
 
@@ -188,18 +188,17 @@ class Occlusion(Runner):
                                       "z": 0},
                           "id": moving_o_id})
         
-        # Apply force
-        commands.append({"$type": "apply_force_magnitude_to_object",
-                          "magnitude": random.uniform(30, 40),
-                          "id": moving_o_id})
-        
-        #TODO Make sure objects cannot fly or even bounce  maybe this is not necessary with the right objects
-         
         # Keep track of transforms, so we can keep track of the movement
-        commands.append({"$type": "send_transforms",
-                                  "frequency": "always"})
+        commands.append([{"$type": "send_transforms",
+                                  "frequency": "always",
+                        "ids": self.o_ids},
+                        {"$type": "send_rigidbodies",
+                       "frequency": "always",
+                        "ids": self.o_ids},
+                      {"$type": "send_static_rigidbodies",
+                       "frequency": "once",
+                        "ids": self.o_ids}])
         
-        print(self.names)
         return commands
     
 

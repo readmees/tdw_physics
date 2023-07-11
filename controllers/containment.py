@@ -42,19 +42,20 @@ class Containment(Runner):
             patience = random.randint(20, 40)
 
             commands = []
+            transitions_avoided = 0
             for i in range(tot_frames):
                 print(i)
                 resp = self.communicate(commands)
                 commands = []
-                o_rotation_deg, container_position = get_transforms(resp, self.o_ids[0])
+                o_rotation_deg, container_position, _ = get_transforms(resp, self.o_ids[0])
                 rotations.append(o_rotation_deg)
                 positions.append(container_position)
 
                 # Only look back at the last x frames and only consider transition after x frames
                 if len(rotations) == patience:
                     # See if the container stopped mostly shaking the last x frames
-                    rotation_sleep = np.array([np.std(np.array(rotations)[:,i]) < .1 for i in range(3)]).all()
-                    positions_sleep = np.array([np.std(np.array(positions)[:,i]) < .1 for i in range(3)]).all()
+                    rotation_sleep = np.array([np.std(np.array(rotations)[:,i]) < .2 for i in range(3)]).all()
+                    positions_sleep = np.array([np.std(np.array(positions)[:,i]) < .2 for i in range(3)]).all()
                     
                     if rotation_sleep and positions_sleep:
                         # Get position of transtions object
@@ -160,7 +161,6 @@ class Containment(Runner):
         records, self.bounds = get_two_random_records(smaller_list=CONTAINED, larger_list=CONTAINERS)
         
         # Select a container.
-        # Manually set the mass of the container.
         container_id = self.get_unique_id()
         commands.extend(self.get_add_physics_object(model_name=records[1].name,
                                                     library="models_core.json",
@@ -172,7 +172,7 @@ class Containment(Runner):
                                                               "y": uniform(-10, 10),
                                                               "z": uniform(-10, 10)}))
         
-        # Add a random target object, with random size, mass, bounciness and initial orientation.
+        # Add a random target object
         o_record = records[0]
         o_id = self.get_unique_id()
         self.o_ids = [container_id, o_id]
@@ -195,5 +195,5 @@ class Containment(Runner):
 
 if __name__ == "__main__":
     c = Containment()
-    success = c.run(num=5, pass_masks=['_img'] , room='empty', tot_frames=400, add_object_to_scene=True, trial_type='transition')
+    success = c.run(num=5, pass_masks=['_img'] , room='empty', tot_frames=1000, add_object_to_scene=True, trial_type='transition')
     print(success)

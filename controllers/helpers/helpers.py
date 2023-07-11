@@ -11,9 +11,11 @@ from tdw.tdw_utils import TDWUtils
 # For get_sleeping() and get_transforms()
 from tdw.output_data import OutputData, Transforms, Rigidbodies
 
-
 # For rotation in degrees (get_transforms)
 from scipy.spatial.transform import Rotation
+
+# For mass in get_transforms()
+from tdw.output_data import StaticRigidbodies
 
 class ObjectInfo:
     """
@@ -178,7 +180,8 @@ def get_sleeping(resp, o_id):
     return sleeping
 
 def get_transforms(resp, o_id):
-    ''' Get position and rotation of object with object id o_id'''
+    ''' Get mass, position and rotation of object with object id o_id'''
+    o_rotation_deg, o_position, o_mass = None, None, None
     for i in range(len(resp) - 1):
         r_id = OutputData.get_data_type_id(resp[i])
         # Parse Transforms output data to get the object's position.
@@ -197,4 +200,9 @@ def get_transforms(resp, o_id):
 
                     # Convert the Euler angles to degrees #NOTE: by ChatGPT might be wrong
                     o_rotation_deg = np.degrees(euler_angles)
-    return o_rotation_deg, o_position
+        elif r_id == "srig":
+                srig = StaticRigidbodies(resp[i])
+                for j in range(srig.get_num()):
+                    o_mass = srig.get_mass(j)
+
+    return o_rotation_deg, o_position, o_mass
