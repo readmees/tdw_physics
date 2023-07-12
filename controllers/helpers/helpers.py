@@ -207,9 +207,9 @@ def get_transforms(resp, o_id):
 
     return o_rotation_deg, o_position, o_mass
 
-def get_magnitude(record, random_ness=5):
+def get_magnitude(record, randomness=5):
     ''' Returns a suitable magnitude for the object'''
     #NOTE: might have a bias random.uniform(-random_ness, random_ness)
-    magnitude = (-TDWUtils.get_unit_scale(record)*2+55)/2 + (np.prod(TDWUtils.get_bounds_extents(record.bounds))*10+15)/2 - 5 + random.uniform(-random_ness, random_ness)
+    magnitude = (-TDWUtils.get_unit_scale(record)*2+55)/2 + (np.prod(TDWUtils.get_bounds_extents(record.bounds))*10+15)/2 - 5 + random.uniform(-randomness, randomness)
     return magnitude
 
