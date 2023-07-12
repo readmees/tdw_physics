@@ -61,8 +61,6 @@ def get_random_avatar_position(radius_min: float, radius_max: float, y_min: floa
 
 def images_to_video(image_folder, video_name, fps, pass_masks, png):
     '''From https://github.com/kkroening/ffmpeg-python/blob/master/examples/README.md#assemble-video-from-sequence-of-frames'''
-
-
     for mask_type in pass_masks:
         # Added for good order of frames
         input_names = f'{image_folder}/{mask_type.replace("_", "")}_*'
@@ -77,7 +75,6 @@ def images_to_video(image_folder, video_name, fps, pass_masks, png):
             .filter('select', 'gte(n, 1)')
             .output(video_name+f'{mask_type}.mp4', loglevel="quiet")
             .run()
-
         )
 
 def message(message, message_type, progress=None):
@@ -181,6 +178,7 @@ def get_sleeping(resp, o_id):
 
 def get_transforms(resp, o_id):
     ''' Get mass, position and rotation of object with object id o_id'''
+    #NOTE send_transforms should be turned on, same for srig
     o_rotation_deg, o_position, o_mass = None, None, None
     for i in range(len(resp) - 1):
         r_id = OutputData.get_data_type_id(resp[i])

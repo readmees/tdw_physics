@@ -22,7 +22,7 @@ from typing import Dict
 import random
 from helpers.runner_main import Runner
 from helpers.objects import *
-from helpers.helpers import message, get_two_random_records, get_magnitude
+from helpers.helpers import message, get_two_random_records, get_magnitude, get_record_with_name
 
 # To keep track of where the moving objects is
 from tdw.output_data import Transforms, OutputData
@@ -188,7 +188,7 @@ class Occlusion(Runner):
                           "id": moving_o_id})
         
         # Find suitable magnitude for force
-        record_moving = self.records_dict[self.names[0]]
+        record_moving = get_record_with_name(self.names[0])
         magnitude = get_magnitude(record_moving)
         print(magnitude)
         # Apply force

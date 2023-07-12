@@ -1,4 +1,4 @@
-# STATUS: V1 Experimental
+# STATUS: V2 Passing OT
 '''
 Readme:
 The core of of this code is taken from tdw_physics, from containment.py 
@@ -6,7 +6,7 @@ tdw_physics uses custom/random physics, here we use the default
 Now the transition is a force, of course teleport could make sense as well
 
 Possible improvements:
-
+Stop frames when objects is out of screen
 '''
 from typing import List
 from random import choice, uniform
