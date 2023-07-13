@@ -1,13 +1,7 @@
-data/videos/*
-data/frames_temp/*
-data/backgrounds/*
+data/*
 data_publish/*
 TDW.app
 __pycache__/*
 controllers/__pycache__/*
 controllers/helpers/__pycache__/*
 .DS_Store
-data_publish.zip
-data_temp/*
-data_published/*
-data_publish_v2/*
