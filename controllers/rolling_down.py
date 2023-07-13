@@ -93,8 +93,6 @@ class Slope(Runner):
             commands.append({"$type": "set_color",
                             "color": {"r": random.random(), "g": random.random(), "b": random.random(), "a": 1.0},
                             "id": object_id})
-        
-        self.scene_o_ids = ids
         return commands
     
     def set_camera(self):

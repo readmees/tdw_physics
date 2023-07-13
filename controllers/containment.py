@@ -134,7 +134,7 @@ class Containment(Runner):
         self.balancer_height = TDWUtils.get_bounds_extents(balancer_rec.bounds)[1] * balancer_scale
 
         object_id = self.get_unique_id()
-        
+
         # Add the object
         commands.extend(self.get_add_physics_object(model_name=balancer_name,
                                                 library="models_flex.json",
@@ -154,8 +154,6 @@ class Containment(Runner):
         commands.append({"$type": "set_color",
                         "color": {"r": random.random(), "g": random.random(), "b": random.random(), "a": 1.0},
                         "id": object_id})
-        
-        self.scene_o_ids = [object_id]
         return commands
     
     def set_camera(self):
