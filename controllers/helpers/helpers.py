@@ -11,9 +11,14 @@ from tdw.tdw_utils import TDWUtils
 # For get_sleeping() and get_transforms()
 from tdw.output_data import OutputData, Transforms, Rigidbodies
 
-
 # For rotation in degrees (get_transforms)
 from scipy.spatial.transform import Rotation
+
+# For mass in get_transforms()
+from tdw.output_data import StaticRigidbodies
+
+import shutil
+import os
 
 class ObjectInfo:
     """
@@ -57,26 +62,36 @@ def get_random_avatar_position(radius_min: float, radius_max: float, y_min: floa
 
         return {"x": a_x, "y": a_y, "z": a_z}
 
-def images_to_video(image_folder, video_name, fps, pass_masks, png):
+def images_to_video(image_folder, video_name, fps, pass_masks, png, save_frames, save_mp4):
     '''From https://github.com/kkroening/ffmpeg-python/blob/master/examples/README.md#assemble-video-from-sequence-of-frames'''
+    if save_mp4:
+        # Create mp4 file
+        for mask_type in pass_masks:
+            # Added for good order of frames
+            input_names = f'{image_folder}/{mask_type.replace("_", "")}_*'
+            file_ex = '.jpg' if not png and mask_type == '_img' else '.png'
+            input_names += file_ex
 
+            # Create the video for every mask type, loglevel="quiet" to mute output
+            # Every first frame is skipped
+            (
+                ffmpeg
+                .input(input_names, pattern_type='glob', framerate=fps)
+                .filter('select', 'gte(n, 1)')
+                .output(video_name+f'{mask_type}.mp4', loglevel="quiet")
+                .run()
+            )
+    
+    if save_frames:
+        path_frames = f'{video_name}/'.replace('videos', 'frames')
+        os.makedirs(path_frames, exist_ok=True)
 
-    for mask_type in pass_masks:
-        # Added for good order of frames
-        input_names = f'{image_folder}/{mask_type.replace("_", "")}_*'
-        file_ex = '.jpg' if not png and mask_type == '_img' else '.png'
-        input_names += file_ex
+        # Move all the frames to a frames folder
+        shutil.move(f'{image_folder}/', path_frames)
+        
 
-        # Create the video for every mask type, loglevel="quiet" to mute output
-        # Every first frame is skipped
-        (
-            ffmpeg
-            .input(input_names, pattern_type='glob', framerate=fps)
-            .filter('select', 'gte(n, 1)')
-            .output(video_name+f'{mask_type}.mp4', loglevel="quiet")
-            .run()
+        os.makedirs(f'{image_folder}/', exist_ok=True)
 
-        )
 
 def message(message, message_type, progress=None):
     '''
@@ -116,11 +131,11 @@ def message(message, message_type, progress=None):
         
     return formatted_message+"\r"
 
-def get_record_with_name(name):
+def get_record_with_name(name, json='models_full.json'):
     '''Get record of object by name
     param name: type str, should be in models_full.json
     '''
-    lib = ModelLibrarian('models_full.json')
+    lib = ModelLibrarian(json)
     records = {record.name:record for record in lib.records}
     return records[name]
         
@@ -178,7 +193,9 @@ def get_sleeping(resp, o_id):
     return sleeping
 
 def get_transforms(resp, o_id):
-    ''' Get position and rotation of object with object id o_id'''
+    ''' Get mass, position and rotation of object with object id o_id'''
+    #NOTE send_transforms should be turned on, same for srig
+    o_rotation_deg, o_position, o_mass = None, None, None
     for i in range(len(resp) - 1):
         r_id = OutputData.get_data_type_id(resp[i])
         # Parse Transforms output data to get the object's position.
@@ -197,4 +214,16 @@ def get_transforms(resp, o_id):
 
                     # Convert the Euler angles to degrees #NOTE: by ChatGPT might be wrong
                     o_rotation_deg = np.degrees(euler_angles)
-    return o_rotation_deg, o_position
+        elif r_id == "srig":
+                srig = StaticRigidbodies(resp[i])
+                for j in range(srig.get_num()):
+                    o_mass = srig.get_mass(j)
+
+    return o_rotation_deg, o_position, o_mass
+
+def get_magnitude(record, randomness=5):
+    ''' Returns a suitable magnitude for the object'''
+    #NOTE: might have a bias random.uniform(-random_ness, random_ness)
+    magnitude = (-TDWUtils.get_unit_scale(record)*2+55)/2 + (np.prod(TDWUtils.get_bounds_extents(record.bounds))*10+15)/2 - 5 + random.uniform(-randomness, randomness)
+    return magnitude
+

@@ -1,3 +1,5 @@
+
+![](https://img.shields.io/badge/build-dev-blue)
 # TDW Trials
 Implements automated generation of object, agent and transition based videos in TDW  
 Note: internet connection needed
@@ -43,21 +45,39 @@ A lot of this code is from the [tdw_physics](https://github.com/alters-mit/tdw_p
 
 ## Notes
 - Not all the scenes are tested, trials are tested in empty room, so objects might spawn in walls etc. or empty frames mith be
-- Occlusion trials do NOT work for other rooms then empty room (yet)
- - tdw_room gives a weird 'shine' with the windows
- - box_room_2018 might have too much friction for the current forces because of the carpet
-- Masses of all occluding objects are the same now, this should be fixed in next version
+ - Occlusion trials do NOT work for other rooms then empty room (yet)
+  - tdw_room gives a weird 'shine' with the windows
+  - box_room_2018 might have too much friction for the current forces because of the carpet
 - Many colliding objects appear too bouncy when falling down
+- Some scales seem unrealistic
+
+### Force of magnitude
+The magnitude of the force should be significantly smalller for light/small objects then for heavy/large objects. 
+We use the following code for any record:
+```python
+magnitude = (-TDWUtils.get_unit_scale(record)*2+55)/2 + (np.prod(TDWUtils.get_bounds_extents(record.bounds))*10+15)/2 - 5 + random.uniform(-randomness, randomness)
+```
+Contained objects uses 1/4 of this force magnitude.
+If we assume a lower bound of -5 and an upper bound of 5 we get for:
++5: Lowest magnitude is 14.783988078744567 and highest is 55.30601623934612
+middle: Lowest magnitude is 9.783988078744567 and highest is 50.30601623934612
+-5: Lowest magnitude is 4.783988078744567 and highest is 45.30601623934612
+
+The graph shows that with the current formula and a randomness setting of 5 we get an increasing magnitude when the product of the [external bounds](https://github.com/threedworld-mit/tdw/blob/master/Documentation/python/tdw_utils.md#get_bounds_extents) increased and the [scale factor](https://github.com/threedworld-mit/tdw/blob/master/Documentation/python/tdw_utils.md#get_unit_scale) decreased. 
+
+NOTE: The __Magnitude of force for models core__ graph regards objects from the models_core.json libray, but only the 96 selected models for these trials.  
+![magnitude.png](magnitude.png)
 
 ## TODO
-- ~~Streamline platform~~
 - Object based trials first version
 - Transition based trials first version
 - Agent based trials first version
+- Make multiple resets again within trial sets, because current version is messy and doesn't work with background objects
+- ~~Streamline platform~~
 - ~~Chose better objects~~
 - ~~Make a objectshower or use the TDW objectshower~~
 - ~~Implement rolling down controller~~
 - ~~Improve occlusion: don't stop behind object, but behind object in line with camera angle~~
 - ~~Improve occlusion: in objectbased, use force~~
-- Use real masses for occluding
-- Get real height and width of objects
+- ~~Use real ___masses___ for occluding (not masses, but bounds and scale, see Force of magnitude)~~
+- ~~Get real height and width of objects~~

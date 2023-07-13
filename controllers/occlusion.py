@@ -22,7 +22,7 @@ from typing import Dict
 import random
 from helpers.runner_main import Runner
 from helpers.objects import *
-from helpers.helpers import message, get_two_random_records
+from helpers.helpers import message, get_two_random_records, get_magnitude, get_record_with_name
 
 # To keep track of where the moving objects is
 from tdw.output_data import Transforms, OutputData
@@ -30,15 +30,14 @@ from tdw.librarian import ModelLibrarian
 import numpy as np
 
 from tdw.object_data.object_static import ObjectStatic
+from tdw.tdw_utils import TDWUtils
 
 class Occlusion(Runner):
     def __init__(self, port=1071):
         self.controller_name = 'occlusion'
         lib = ModelLibrarian('models_core.json')
-        self.records = {record.name:record for record in lib.records}
-
+        self.records_dict = {record.name:record for record in lib.records}
         self.camera_pos = {"x": random.uniform(1.5, 2), "y": 0.1, "z": random.uniform(-1, 1)}
-
         super().__init__(port=port)
             
     def add_occ_objects(self):
@@ -55,7 +54,7 @@ class Occlusion(Runner):
             object_id = self.o_ids[0] if i == 0 else self.o_ids[1]
             position = self.o_moving_loc if i == 0 else {"x": 0, "y": 0, "z": self.o_occl_loc_z}
             
-            # Set randomized physics values and update the physics info. #NOTE this is done incorrectly in tdw_physics with TDWUtils.get_unit_scale
+            # Set randomized physics values and update the physics info. #NOTE this is done differently in tdw_physics with TDWUtils.get_unit_scale
             scale = random.uniform(0.9, 1.1)
 
             rotation_y = random.uniform(-90, 90) if i == 0 else 0
@@ -170,12 +169,11 @@ class Occlusion(Runner):
         commands, bounds = self.add_occ_objects()
 
         # Teleport camera same distance from occluder as moving object
-        #TODO change height depending on height objects
         #TODO check if moving camera creates problems
         self.camera_pos['x'] = -self.o_moving_loc['x']
 
-        # Float somewhere between the ground and occluder height
-        self.camera_pos['y'] = random.uniform(0.01, np.mean(bounds[1][1]))
+        # Float somewhere between the occluder height/2 and occluder height
+        self.camera_pos['y'] = random.uniform(bounds[1][1]/2, bounds[1][1])
         self.camera.teleport(position=self.camera_pos)
 
         # Rotate camera to occluding object
@@ -188,16 +186,24 @@ class Occlusion(Runner):
                                       "z": 0},
                           "id": moving_o_id})
         
+        # Find suitable magnitude for force
+        record_moving = get_record_with_name(self.names[0])
+        magnitude = get_magnitude(record_moving)
+        print(magnitude)
         # Apply force
         commands.append({"$type": "apply_force_magnitude_to_object",
-                          "magnitude": random.uniform(30, 40),
+                          "magnitude": magnitude,
                           "id": moving_o_id})
         
         #TODO Make sure objects cannot fly or even bounce  maybe this is not necessary with the right objects
          
         # Keep track of transforms, so we can keep track of the movement
-        commands.append({"$type": "send_transforms",
-                                  "frequency": "always"})
+        commands.extend([{"$type": "send_transforms",
+                                  "frequency": "always"},
+                        {"$type": "send_rigidbodies",
+                       "frequency": "always"},
+                      {"$type": "send_static_rigidbodies",
+                       "frequency": "once"}])
         
         print(self.names)
         return commands
@@ -205,7 +211,7 @@ class Occlusion(Runner):
 
 if __name__ == "__main__":
     c = Occlusion()
-    success = c.run(num=3, pass_masks=['_img', '_mask'], room='empty', tot_frames=20, add_object_to_scene=False, trial_type='object', png=False)
+    success = c.run(num=5, pass_masks=['_img', '_mask'], room='empty', tot_frames=200, add_object_to_scene=False, trial_type='object', png=False)
     # The commented code only works for other masks then _img
     # for i in range(30):
     #     c = Occlusion(port=1000+i)
