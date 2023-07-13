@@ -1,4 +1,4 @@
-# STATUS: V1 Experimental
+# STATUS: V2 Passing OT
 '''
 Readme:
 The core of of this code is taken from tdw_physics, from containment.py 
@@ -6,7 +6,7 @@ tdw_physics uses custom/random physics, here we use the default
 Now the transition is a force, of course teleport could make sense as well
 
 Possible improvements:
-
+Stop frames when objects is out of screen
 '''
 from typing import List
 from random import choice, uniform
@@ -19,7 +19,7 @@ import random
 
 from helpers.runner_main import Runner
 from helpers.objects import CONTAINERS, CONTAINED
-from helpers.helpers import get_two_random_records, get_sleeping, message, get_transforms
+from helpers.helpers import get_two_random_records, message, get_transforms, get_magnitude, get_record_with_name
 
 import numpy as np
 
@@ -30,8 +30,10 @@ class Containment(Runner):
     """
     def __init__(self, port: int = 1071):
         self.controller_name = 'containment'
-        self.o_x = -1.3
-        self.o_z = -2.15
+
+        # Randomize x&z where objects will put
+        self.o_x = random.uniform(-3, 3)
+        self.o_z = random.uniform(-3, 3)
         super().__init__(port=port)
     
     def run_per_frame_commands(self, trial_type, tot_frames):
@@ -47,15 +49,15 @@ class Containment(Runner):
                 print(i)
                 resp = self.communicate(commands)
                 commands = []
-                o_rotation_deg, container_position = get_transforms(resp, self.o_ids[0])
+                o_rotation_deg, container_position, _ = get_transforms(resp, self.o_ids[0])
                 rotations.append(o_rotation_deg)
                 positions.append(container_position)
 
                 # Only look back at the last x frames and only consider transition after x frames
                 if len(rotations) == patience:
                     # See if the container stopped mostly shaking the last x frames
-                    rotation_sleep = np.array([np.std(np.array(rotations)[:,i]) < .1 for i in range(3)]).all()
-                    positions_sleep = np.array([np.std(np.array(positions)[:,i]) < .1 for i in range(3)]).all()
+                    rotation_sleep = np.array([np.std(np.array(rotations)[:,i]) < .3 for i in range(3)]).all()
+                    positions_sleep = np.array([np.std(np.array(positions)[:,i]) < .3 for i in range(3)]).all()
                     
                     if rotation_sleep and positions_sleep:
                         # Get position of transtions object
@@ -80,9 +82,10 @@ class Containment(Runner):
                             #                               "z": random.uniform(-10, 10)},
                             #                 "id": self.o_ids[1]})
 
+                            # Get suitable random force
+                            force = get_magnitude(self.o_record)*.25
 
                             # Apply a force to the object
-                            force =  random.uniform(4, 20)
                             commands.append({"$type": "apply_force_at_position", 
                                              "id": self.o_ids[1], 
                                              "force": {"x":force, "y": 0, "z": force}, 
@@ -122,8 +125,14 @@ class Containment(Runner):
         '''This method will add a fixed object to the scene that the container has something to balance/shake on,
         since the object will not change during trials and is fixed in place, it will be added to the background shot'''
         balancer_name = random.choice([record.name for record in ModelLibrarian('models_flex.json').records])
-        
+
+        # Get good scale for balancer, compared to most of the containers
         balancer_scale = .45
+
+        # Get height of balancer
+        balancer_rec = get_record_with_name(balancer_name, json='models_flex.json') 
+        self.balancer_height = TDWUtils.get_bounds_extents(balancer_rec.bounds)[1] * balancer_scale
+
         object_id = self.get_unique_id()
         
         # Add the object
@@ -152,8 +161,8 @@ class Containment(Runner):
     def set_camera(self):
         ''' The avatar_id of the camera should be 'frames_temp' '''
         # Add camera
-        camera = ThirdPersonCamera(position={"x": uniform(-1,0), "y": uniform(1.8,2.2), "z": uniform(-1, 0)},
-                           look_at={"x": -1.0, "y": 1.0, "z": -1.5},
+        camera = ThirdPersonCamera(position={"x": self.o_x+uniform(-1,1), "y": uniform(2.8,3.2), "z": self.o_z+uniform(-1, 1)},
+                           look_at={"x": self.o_x, "y": 1.0, "z": self.o_z},
                            avatar_id='frames_temp')
         self.add_ons.append(camera)
 
@@ -162,24 +171,27 @@ class Containment(Runner):
         # Select a random container and contained object
         records, self.bounds = get_two_random_records(smaller_list=CONTAINED, larger_list=CONTAINERS)
         
+        # Get balancer height to see how hight container should be placed
+        height = self.balancer_height
+        y = height + random.uniform(.1, .2)
+
         # Select a container.
-        # Manually set the mass of the container.
         container_id = self.get_unique_id()
         commands.extend(self.get_add_physics_object(model_name=records[1].name,
                                                     library="models_core.json",
                                                     object_id=container_id,
                                                     position={"x": self.o_x,
-                                                              "y": 0.6,
+                                                              "y": y,
                                                               "z": self.o_z},
                                                     rotation={"x": uniform(-10, 10),
                                                               "y": uniform(-10, 10),
                                                               "z": uniform(-10, 10)}))
         
-        # Add a random target object, with random size, mass, bounciness and initial orientation.
-        o_record = records[0]
+        # Add a random target object
+        self.o_record = records[0]
         o_id = self.get_unique_id()
         self.o_ids = [container_id, o_id]
-        commands.extend(self.get_add_physics_object(model_name=o_record.name,
+        commands.extend(self.get_add_physics_object(model_name=self.o_record.name,
                                                     library="models_core.json",
                                                     object_id=o_id,
                                                     position={"x": self.o_x,
@@ -198,5 +210,5 @@ class Containment(Runner):
 
 if __name__ == "__main__":
     c = Containment()
-    success = c.run(num=1, pass_masks=['_img'] , room='empty', tot_frames=3, add_object_to_scene=True, trial_type='object', num_redo=500)
+    success = c.run(num=5, pass_masks=['_img', '_mask'] , room='empty', tot_frames=200, add_object_to_scene=True, trial_type='object')
     print(success)
