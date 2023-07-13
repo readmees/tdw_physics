@@ -140,5 +140,5 @@ class Slope(Runner):
     
 if __name__ == "__main__":
     c = Slope()
-    success = c.run(num=5, pass_masks=['_img', '_id'], room='empty', tot_frames=250, add_object_to_scene=True, trial_type='transition')
+    success = c.run(num=5, pass_masks=['_img', '_id'], room='empty', tot_frames=250, add_object_to_scene=True, trial_type='object')
     print(success)

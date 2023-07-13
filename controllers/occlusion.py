@@ -169,12 +169,11 @@ class Occlusion(Runner):
         commands, bounds = self.add_occ_objects()
 
         # Teleport camera same distance from occluder as moving object
-        #TODO change height depending on height objects
         #TODO check if moving camera creates problems
         self.camera_pos['x'] = -self.o_moving_loc['x']
 
-        # Float somewhere between the ground and occluder height
-        self.camera_pos['y'] = random.uniform(0.01, np.mean(bounds[1][1]))
+        # Float somewhere between the occluder height/2 and occluder height
+        self.camera_pos['y'] = random.uniform(bounds[1][1]/2, bounds[1][1])
         self.camera.teleport(position=self.camera_pos)
 
         # Rotate camera to occluding object
@@ -212,7 +211,7 @@ class Occlusion(Runner):
 
 if __name__ == "__main__":
     c = Occlusion()
-    success = c.run(num=3, pass_masks=['_img', '_mask'], room='empty', tot_frames=160, add_object_to_scene=False, trial_type='transition', png=False)
+    success = c.run(num=5, pass_masks=['_img', '_mask'], room='empty', tot_frames=200, add_object_to_scene=False, trial_type='object', png=False)
     # The commented code only works for other masks then _img
     # for i in range(30):
     #     c = Occlusion(port=1000+i)

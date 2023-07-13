@@ -109,5 +109,5 @@ class UpWarmer(Runner):
     
 if __name__ == "__main__":
     c = UpWarmer()
-    success = c.run(num=160, pass_masks=['_img', '_id'], room='empty', add_object_to_scene=False, tot_frames=150, png=False)
+    success = c.run(num=97, pass_masks=['_img', '_id'], room='empty', add_object_to_scene=False, tot_frames=150, png=False)
     print(success)

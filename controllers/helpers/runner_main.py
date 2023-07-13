@@ -74,7 +74,7 @@ class Runner(Controller):
         self.add_ons.append(self.camera)
     
     def run(self, num=5, trial_type='object', png=False, pass_masks=["_img", "_mask"], framerate = 30, room='random', 
-            tot_frames=200, add_object_to_scene=False):
+            tot_frames=200, add_object_to_scene=False, save_frames=True, save_mp4=False):
         '''
         param num: the number of trials
         param trial_type: you can choose if you would like to run an trial object, agent or transition based
@@ -111,7 +111,7 @@ class Runner(Controller):
         controller_name = self.controller_name
         
         # Define path for output data frames
-        self.path_main = '../data_publish_v2'
+        self.path_main = '../data_temp'
         path_main = self.path_main
         paths = [f'{path_main}/{name}/{controller_name}/{trial_type}' for name in ['backgrounds', 'videos']]
         path_backgr, path_videos = paths
@@ -197,7 +197,7 @@ class Runner(Controller):
             output_video = f"{path_videos}/{trial_id}_trial_{trial_num}"
 
             # Convert images to videos
-            images_to_video(path_frames, output_video, framerate, pass_masks, png)
+            images_to_video(path_frames, output_video, framerate, pass_masks, png, save_frames, save_mp4)
             shutil.rmtree(path_frames)
 
             # Show progress
