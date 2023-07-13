@@ -19,7 +19,7 @@ import random
 
 from helpers.runner_main import Runner
 from helpers.objects import CONTAINERS, CONTAINED
-from helpers.helpers import get_two_random_records, message, get_transforms, get_magnitude
+from helpers.helpers import get_two_random_records, message, get_transforms, get_magnitude, get_record_with_name
 
 import numpy as np
 
@@ -125,8 +125,14 @@ class Containment(Runner):
         '''This method will add a fixed object to the scene that the container has something to balance/shake on,
         since the object will not change during trials and is fixed in place, it will be added to the background shot'''
         balancer_name = random.choice([record.name for record in ModelLibrarian('models_flex.json').records])
-        
+
+        # Get good scale for balancer, compared to most of the containers
         balancer_scale = .45
+
+        # Get height of balancer
+        balancer_rec = get_record_with_name(balancer_name, json='models_flex.json') 
+        self.balancer_height = TDWUtils.get_bounds_extents(balancer_rec.bounds)[1] * balancer_scale
+
         object_id = self.get_unique_id()
 
         # Add the object
@@ -163,13 +169,17 @@ class Containment(Runner):
         # Select a random container and contained object
         records, self.bounds = get_two_random_records(smaller_list=CONTAINED, larger_list=CONTAINERS)
         
+        # Get balancer height to see how hight container should be placed
+        height = self.balancer_height
+        y = height + random.uniform(.1, .2)
+
         # Select a container.
         container_id = self.get_unique_id()
         commands.extend(self.get_add_physics_object(model_name=records[1].name,
                                                     library="models_core.json",
                                                     object_id=container_id,
                                                     position={"x": self.o_x,
-                                                              "y": 0.6,
+                                                              "y": y,
                                                               "z": self.o_z},
                                                     rotation={"x": uniform(-10, 10),
                                                               "y": uniform(-10, 10),
@@ -198,5 +208,5 @@ class Containment(Runner):
 
 if __name__ == "__main__":
     c = Containment()
-    success = c.run(num=5, pass_masks=['_img'] , room='empty', tot_frames=1000, add_object_to_scene=True, trial_type='transition')
+    success = c.run(num=5, pass_masks=['_img', '_mask'] , room='empty', tot_frames=200, add_object_to_scene=True, trial_type='object')
     print(success)
