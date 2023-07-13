@@ -1,56 +1,23 @@
 # STATUS: V1 - Experimential
 '''
 Readme:
+Objects move mostly in z and y position
 
 Possible improvements:
-random turns/scales/position cube
 add other objects then cube
-add more rolling objects
 Always make two versions of the exact same trial, object and transition?
-
+Use collision manager to see when transition needs to happen?
 '''
 from tdw.add_ons.third_person_camera import ThirdPersonCamera
-from typing import Dict
-
-# Added for video
-# Added for occlusions
 import random
-
-
-# From &tdw_physics
-from typing import List, Dict
-from tdw.librarian import ModelLibrarian
-from typing import Dict
-from helpers.helpers import ObjectInfo, get_random_avatar_position
-
-from tdw.controller import Controller
-from tdw.tdw_utils import TDWUtils
-from tdw.add_ons.third_person_camera import ThirdPersonCamera
-from typing import Dict
-from tdw.add_ons.collision_manager import CollisionManager
-from tdw.add_ons.object_manager import ObjectManager
-
-# Added for video
-from tdw.add_ons.image_capture import ImageCapture
-from tdw.backend.paths import EXAMPLE_CONTROLLER_OUTPUT_PATH
-from os import chdir, system
-from subprocess import call
-import shutil
-
-from helpers.helpers import message
 
 # Added for Slopes
 import random
 import numpy as np
 
-# From &tdw_physics
-from typing import List, Dict
-from tdw.librarian import ModelLibrarian
-from typing import Dict
-from helpers.helpers import ObjectInfo, get_random_avatar_position
-
 from helpers.runner_main import Runner
 from helpers.objects import ROLLING_FLIPPED
+from helpers.helpers import get_magnitude, message, get_record_with_name
 
 
 class Slope(Runner):
@@ -70,7 +37,7 @@ class Slope(Runner):
         param tot_frames: the total amount of frames per trial
         '''
         #TODO: improve transition
-        transition_frame = random.choice(list(range(tot_frames//3, tot_frames)))
+        transition_frame = random.choice(list(range(tot_frames//2, tot_frames)))
         for i in range(tot_frames):
             if i >= transition_frame and trial_type == 'transition':
                 print('transition, started')
@@ -100,16 +67,25 @@ class Slope(Runner):
                                                     object_id=slope_id,
                                                     rotation={"x": 0, "y": 0, "z": random.uniform(216, 244)},
                                                     position={"x": -.5, "y": 0, "z": 0},
-                                                    scale_factor = {"x": .8, "y": .8, "z": .8}))
-        
+                                                    scale_factor = {"x": .8, "y": .8, "z": .9},
+                                                    dynamic_friction = 0, 
+                                                    static_friction = 0))
         # Add wall
         commands.extend(self.get_add_physics_object(model_name="cube",
                                                     library="models_flex.json",
                                                     object_id=wall_id,
                                                     position={"x": .5, "y": 0, "z": 0},
                                                     rotation={"x": 0, "y": 180, "z": 0},
-                                                    scale_factor={"x": .1, "y": .25, "z": .5}
+                                                    scale_factor={"x": .1, "y": .25, "z": .9},
+                                                    bounciness=1
                                                     ))
+        
+        # # Make slope very 'slippery' #NOTE this shouldn't do anything, because we already set it in add_physics_object, but it does?
+        commands.append({"$type": "set_physic_material", "dynamic_friction": 0, "static_friction": 0, "id": slope_id})
+        
+        # # Make wall very bouncy #NOTE this shouldn't do anything, because we already set it in add_physics_object, but it does?
+        commands.append({"$type": "set_physic_material", "bounciness": 1, "id": wall_id})
+
         for object_id in ids:
             # Freeze position and rotation for each axis
             commands.extend([{"$type": "set_rigidbody_constraints", "id": object_id, "freeze_position_axes": {"x": 1, "y": 1, "z": 1}, "freeze_rotation_axes": {"x": 1, "y": 1, "z": 1}}])
@@ -143,15 +119,26 @@ class Slope(Runner):
         commands = []
 
         object_choice = random.choice(self.objects)
+
+        # Flip object if needed to roll, e.g. cola can
         rotation_x = 0 if object_choice not in ROLLING_FLIPPED else random.choice([90, -90])
+        
+        # Get position for falling object
+        position = {"x": random.uniform(-.15,-.1), "y": random.uniform(4, 5), "z": random.uniform(-.15,.15)}
+
+        # Add object
         commands.extend(self.get_add_physics_object(model_name=object_choice,
                                                     library='models_core.json',
                                                     object_id=o_id1,
-                                                    position={"x": 0, "y": random.uniform(.5, 1.5), "z": 0},
+                                                    position=position,
                                                     rotation={"x": rotation_x, "y": 0, "z": 0}))
+        
+        print(object_choice)
+        # Get suitable random force magnitude
+        force = get_magnitude(get_record_with_name(object_choice))*.25
         return commands
     
 if __name__ == "__main__":
     c = Slope()
-    success = c.run(num=20, pass_masks=['_img', '_id'], room='empty', tot_frames=200, add_object_to_scene=True, trial_type='object')
+    success = c.run(num=5, pass_masks=['_img', '_id'], room='empty', tot_frames=250, add_object_to_scene=True, trial_type='transition')
     print(success)
