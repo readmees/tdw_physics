@@ -17,7 +17,7 @@ import numpy as np
 
 from helpers.runner_main import Runner
 from helpers.objects import ROLLING_FLIPPED
-from helpers.helpers import get_magnitude, message, get_record_with_name
+from helpers.helpers import get_magnitude, message, get_record_with_name, get_transforms
 
 
 class Slope(Runner):
@@ -46,7 +46,7 @@ class Slope(Runner):
                 speed = .04
                 self.communicate([{"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[0], "absolute": False},
                                 {"$type": "object_look_at", "other_object_id": self.o_ids[1], "id": self.o_ids[0]},])
-
+            
             else:
                 self.communicate([])
 
@@ -59,7 +59,6 @@ class Slope(Runner):
                             "frequency": "never"})
         self.communicate(destroy_commands)
 
-    
     def add_target(self, commands):
         # self.o_ids = [agent_id, occ_id, target_id]
         target_id = self.o_ids[1]
@@ -69,7 +68,7 @@ class Slope(Runner):
         position = self.o_loc
 
         # Ball doesn't have to roll too much
-        position['y'] = random.uniform(.5,1)
+        position['y'] = random.uniform(.4,.5)
 
         # Drop target on left of slope max, so agent on the right will have to go uphil
         position['x'] =  random.uniform(-.35,-.3)
@@ -121,6 +120,7 @@ class Slope(Runner):
                                                         ))
             # Make wall very bouncy #NOTE this shouldn't do anything, because we already set it in add_physics_object, but it does?
             commands.append({"$type": "set_physic_material", "bounciness": 1, "id": wall_id})
+
         else:
             ids = [ids[0]]
         
@@ -177,7 +177,7 @@ class Slope(Runner):
             commands = self.add_target(commands)
 
             # Put agent random position
-            position = {"x": random.uniform(2.5, 3.5), "y": random.uniform(0, .5), "z": random.uniform(-.15,.15)}
+            position = {"x": random.uniform(1.5, 2), "y": random.uniform(0, .5), "z": random.uniform(-.15,.15)}
             
 
         # Add object
@@ -187,7 +187,15 @@ class Slope(Runner):
                                                     position=position,
                                                     rotation={"x": rotation_x, "y": 0, "z": 0}))
         
-        print(object_choice)
+
+        # Keep track of transforms, so we can keep track of the movement
+        commands.extend([{"$type": "send_transforms",
+                                  "frequency": "always"},
+                        {"$type": "send_rigidbodies",
+                       "frequency": "always"},
+                      {"$type": "send_static_rigidbodies",
+                       "frequency": "once"}])
+        
         # Get suitable random force magnitude
         force = get_magnitude(get_record_with_name(object_choice))*.25
         return commands

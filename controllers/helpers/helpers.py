@@ -225,3 +225,11 @@ def get_magnitude(record, randomness=5):
     magnitude = (-TDWUtils.get_unit_scale(record)*2+55)/2 + (np.prod(TDWUtils.get_bounds_extents(record.bounds))*10+15)/2 - 5 + random.uniform(-randomness, randomness)
     return magnitude
 
+def get_distance(resp, o_id1, o_id2):
+    '''Returns the distance between two objects, returns infinitely big number if resp is empty list'''
+    if not resp:
+        print('not')
+        return np.inf
+    point1 = {axis:value for axis, value in zip(['x', 'y', 'z'], get_transforms(resp, o_id1)[1])}
+    point2 = {axis:value for axis, value in zip(['x', 'y', 'z'], get_transforms(resp, o_id2)[1])}
+    return TDWUtils.get_distance(point1, point2) 
