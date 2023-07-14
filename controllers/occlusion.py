@@ -91,12 +91,9 @@ class Occlusion(Runner):
                 self.communicate([])
 
             if trial_type == 'agent':
-                if i>40:
-                    speed = .05
-                    self.communicate([{"$type": "teleport_object_by", "position": {"x": speed, "y": speed, "z": speed}, "id": self.o_ids[0], "absolute": False},
-                                    {"$type": "object_look_at", "other_object_id": self.o_ids[2], "id": self.o_ids[0]},])
-                else:
-                    self.communicate([])
+                speed = .025
+                self.communicate([{"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[0], "absolute": False},
+                                {"$type": "object_look_at", "other_object_id": self.o_ids[2], "id": self.o_ids[0]},])
         # Reset the scene by destroying the objects
         destroy_commands = []
         for o_id in self.o_ids:
@@ -254,7 +251,7 @@ class Occlusion(Runner):
 
 if __name__ == "__main__":
     c = Occlusion()
-    success = c.run(num=5, pass_masks=['_img', '_mask'], room='empty', tot_frames=200, add_object_to_scene=False, trial_type='agent', png=False)
+    success = c.run(num=5, pass_masks=['_img', '_mask'], room='empty', tot_frames=400, add_object_to_scene=False, trial_type='agent', png=False)
     # The commented code only works for other masks then _img
     # for i in range(30):
     #     c = Occlusion(port=1000+i)

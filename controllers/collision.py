@@ -108,7 +108,12 @@ class Collision(Runner):
 
                 # Update position of moving object
                 moving_pos = {axis:value for axis, value in zip(['x', 'y', 'z'], self.get_ob_pos(self.o_ids[1], resp))}
-                   
+            
+            if trial_type == 'agent':
+                speed = .01
+                self.communicate([{"$type": "teleport_object_by", "position": {"x": speed, "y": 0, "z": speed}, "id": self.o_ids[0], "absolute": False},
+                                {"$type": "object_look_at", "other_object_id": self.o_ids[1], "id": self.o_ids[0]},])
+                 
             if trial_type == 'object':
                 self.communicate([])
         
