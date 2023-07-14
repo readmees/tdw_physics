@@ -104,6 +104,8 @@ class Runner(Controller):
         
         #TODO check input for all params
         self.framerate = framerate
+
+        self.trial_type = trial_type
         
         # Clear the list of add-ons.
         self.add_ons.clear()

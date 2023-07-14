@@ -135,9 +135,7 @@ def get_record_with_name(name, json='models_full.json'):
     '''Get record of object by name
     param name: type str, should be in models_full.json
     '''
-    lib = ModelLibrarian(json)
-    records = {record.name:record for record in lib.records}
-    return records[name]
+    return ModelLibrarian(json).get_record(name)
         
 def get_two_random_records(smaller_list, larger_list, axis = [0, 1, 2]):
         '''This method gets two objects, where one is smaller then the other

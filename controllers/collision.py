@@ -190,5 +190,5 @@ class Collision(Runner):
     
 if __name__ == "__main__":
     c = Collision()
-    success = c.run(num=20, pass_masks=['_img'], room='empty', add_object_to_scene=False, tot_frames=150, png=False, trial_type='transition', save_mp4=True)
+    success = c.run(num=20, pass_masks=['_img'], room='empty', add_object_to_scene=False, tot_frames=150, png=False, trial_type='object', save_mp4=True)
     print(success)
