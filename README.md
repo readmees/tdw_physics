@@ -50,6 +50,11 @@ A lot of this code is from the [tdw_physics](https://github.com/alters-mit/tdw_p
   - box_room_2018 might have too much friction for the current forces because of the carpet
 - Many colliding objects appear too bouncy when falling down
 - Some scales seem unrealistic
+- Different transitions:
+ - Moving objects in occlusion already have a force, they are frozen before applying teleport movement
+ - Contained objects get tiny forces when the object is not shaky enough
+ - Rolling down objects get a teleport movement, but are not first frozen
+ - Collding objects get a teleport movement, but are not first frozen
 
 ### Force of magnitude
 The magnitude of the force should be significantly smalller for light/small objects then for heavy/large objects. 
