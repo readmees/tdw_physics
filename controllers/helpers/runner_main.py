@@ -99,13 +99,18 @@ class Runner(Controller):
                 return message(f'{mask_type} not in {masks_options}', 'error')
         if len(set(pass_masks)) != len(pass_masks):
             return message('pass_mask cannot contain any double masks', 'error')
-        if tot_frames < 100 and trial_type=='transition':
-            return message('Use at least 100 frames for a transition', 'error')
+        
+        if trial_type not in ['transition', 'agent', 'object']:
+            return message("trial_type should be transition', 'agent' or 'object'", 'error')
+        
+        if tot_frames < 100 and trial_type in ['transition', 'agent']:
+            return message('Use at least 100 frames for a transition or agent based trials', 'error')
+        self.trial_type = trial_type
+        
         
         #TODO check input for all params
         self.framerate = framerate
 
-        self.trial_type = trial_type
         
         # Clear the list of add-ons.
         self.add_ons.clear()

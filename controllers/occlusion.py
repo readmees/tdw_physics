@@ -31,6 +31,7 @@ import numpy as np
 
 from tdw.object_data.object_static import ObjectStatic
 from tdw.tdw_utils import TDWUtils
+from copy import deepcopy
 
 class Occlusion(Runner):
     def __init__(self, port=1071):
@@ -39,59 +40,7 @@ class Occlusion(Runner):
         self.records_dict = {record.name:record for record in lib.records}
         self.camera_pos = {"x": random.uniform(1.5, 2), "y": 0.1, "z": random.uniform(-1, 1)}
         super().__init__(port=port)
-            
-    def add_occ_objects(self):
-        '''This method adds two objects to the scene, one moving and one occluder'''
-        records, commands = [], []
-
-        # Random occluded and occluder object, where occluded object is smaller
-        records, bounds = get_two_random_records(smaller_list=OCCLUDED, larger_list=OCCLUDERS, axis=[1,2])
-
-        self.names = [record.name for record in records]
-        for i, record in enumerate(records):
-
-            # Moving object is record[0] & self.o_ids[0] and occluder is record[1] & self.o_ids[1]
-            object_id = self.o_ids[0] if i == 0 else self.o_ids[1]
-            position = self.o_moving_loc if i == 0 else {"x": 0, "y": 0, "z": self.o_occl_loc_z}
-            
-            # Set randomized physics values and update the physics info. #NOTE this is done differently in tdw_physics with TDWUtils.get_unit_scale
-            scale = random.uniform(0.9, 1.1)
-
-            rotation_y = random.uniform(-90, 90) if i == 0 else 0
-            # Add object
-            commands.extend(self.get_add_physics_object(model_name=record.name,
-                                                        library="models_core.json",
-                                                        object_id=object_id,
-                                                        position=position,
-                                                        rotation={"x": 0, "y": rotation_y, "z": 0},
-                                                        scale_factor={"x": scale, "y": scale, "z": scale},
-                                                        default_physics_values=False,
-                                                        dynamic_friction=0.9,
-                                                        static_friction=0.9,
-                                                        mass = 1 # TODO, use real scale
-                                                        ))
-        return commands, bounds
     
-    def set_camera(self):
-        # Add camera
-        self.camera = ThirdPersonCamera(position=self.camera_pos,
-                           look_at={"x": 0, "y": 0, "z": 0},
-                           avatar_id='frames_temp')
-        self.add_ons.append(self.camera)
-    
-    def get_ob_pos(self, o_id, resp):
-        '''Get object position'''
-        for i in range(len(resp) - 1):
-            r_id = OutputData.get_data_type_id(resp[i])
-            # Parse Transforms output data to get the object's position.
-            if r_id == "tran":
-                transforms = Transforms(resp[i])
-                for j in range(transforms.get_num()):
-                    if transforms.get_id(j) == o_id:
-                        # Return position of object with o_id as object id
-                        return transforms.get_position(j)
-        return message(f"{self.names[0]} does not have positions data, with occluder {self.names[1]}", 'error')
-
     def run_per_frame_commands(self, trial_type, tot_frames):
         # Check if transition is done
         transition_compl = False             
@@ -140,7 +89,9 @@ class Occlusion(Runner):
                         
             if trial_type == 'object':
                 self.communicate([])
-        
+
+            if trial_type == 'agent':
+                self.communicate([])
         # Reset the scene by destroying the objects
         destroy_commands = []
         for o_id in self.o_ids:
@@ -149,6 +100,83 @@ class Occlusion(Runner):
         destroy_commands.append({"$type": "send_rigidbodies",
                             "frequency": "never"})
         self.communicate(destroy_commands)
+      
+    def add_occ_objects(self):
+        '''This method adds two objects to the scene, one moving and one occluder'''
+        records, commands = [], []
+
+        # Random occluded and occluder object, where occluded object is smaller
+        records, bounds = get_two_random_records(smaller_list=OCCLUDED, larger_list=OCCLUDERS, axis=[1,2])
+
+        self.names = [record.name for record in records]
+        for i, record in enumerate(records):
+
+            # Moving object is record[0] & self.o_ids[0] and occluder is record[1] & self.o_ids[1]
+            object_id = self.o_ids[0] if i == 0 else self.o_ids[1]
+            position = self.o_moving_loc if i == 0 else {"x": 0, "y": 0, "z": self.o_occl_loc_z}
+            
+            # Set randomized physics values and update the physics info. #NOTE this is done differently in tdw_physics with TDWUtils.get_unit_scale
+            scale = random.uniform(0.9, 1.1)
+
+            rotation_y = random.uniform(-90, 90) if i == 0 else 0
+            # Add object
+            commands.extend(self.get_add_physics_object(model_name=record.name,
+                                                        library="models_core.json",
+                                                        object_id=object_id,
+                                                        position=position,
+                                                        rotation={"x": 0, "y": rotation_y, "z": 0},
+                                                        scale_factor={"x": scale, "y": scale, "z": scale},
+                                                        default_physics_values=False,
+                                                        mass = 1 # TODO, use real scale
+                                                        ))
+        return commands, bounds
+    
+    def set_camera(self):
+        # Add camera
+        self.camera = ThirdPersonCamera(position=self.camera_pos,
+                           look_at={"x": 0, "y": 0, "z": 0},
+                           avatar_id='frames_temp')
+        self.add_ons.append(self.camera)
+    
+    def get_ob_pos(self, o_id, resp):
+        '''Get object position'''
+        for i in range(len(resp) - 1):
+            r_id = OutputData.get_data_type_id(resp[i])
+            # Parse Transforms output data to get the object's position.
+            if r_id == "tran":
+                transforms = Transforms(resp[i])
+                for j in range(transforms.get_num()):
+                    if transforms.get_id(j) == o_id:
+                        # Return position of object with o_id as object id
+                        return transforms.get_position(j)
+        return message(f"{self.names[0]} does not have positions data, with occluder {self.names[1]}", 'error')
+    
+    def add_target(self, commands, bounds):
+        # self.o_ids = [agent_id, occ_id, target_id]
+        target_id = self.o_ids[2]
+
+        # Put target on same position as agent 
+        # But moved in the z position, so it is in front
+        position = deepcopy(self.o_moving_loc)
+        off = random.uniform(.1, .5)
+        position['z'] = position['z'] + bounds[2]/2 + off if self.direction == 'left' else position['z'] - bounds[2]/2 - off
+        
+        # Set scale
+        scale = .2
+
+        # Add object1
+        commands.extend(self.get_add_physics_object(model_name='sphere',
+                                                    library='models_flex.json',
+                                                    object_id=target_id,
+                                                    position=position,
+                                                    scale_factor={"x": scale, "y": scale, "z": scale},
+                                                    mass = 1 # TODO, use real scale
+                                                    ))
+        # Make target red
+        commands.append({"$type": "set_color",
+                        "color": {"r": 1., "g": 0., "b": 0., "a": 1.},
+                        "id": target_id})
+        return commands
 
     def trial_initialization_commands(self):
         '''
@@ -164,9 +192,12 @@ class Occlusion(Runner):
         self.o_occl_loc_z = random.uniform(-.5, .5)
 
         # Add objects and their ids, first id is moving object, second collider
-        self.o_ids = [self.get_unique_id(), self.get_unique_id()]
+        num_objects = 3 if self.trial_type == 'agent' else 2
+        self.o_ids = [self.get_unique_id() for _ in range(num_objects)]
         moving_o_id = self.o_ids[0]
         commands, bounds = self.add_occ_objects()
+        if self.trial_type == 'agent':
+            commands = self.add_target(commands, bounds[0])
 
         # Teleport camera same distance from occluder as moving object
         #TODO check if moving camera creates problems
@@ -179,6 +210,16 @@ class Occlusion(Runner):
         # Rotate camera to occluding object
         self.camera.rotate({"x": 0, "y": 0, "z":self.o_occl_loc_z})
 
+        # Apply force to target instead if agent based trial
+        if self.trial_type == 'agent':
+            moving_o_id = self.o_ids[2]
+            magnitude = random.uniform(80, 100)
+        else:
+            # Find suitable magnitude for force
+            record_moving = get_record_with_name(self.names[0])
+            magnitude = get_magnitude(record_moving)
+            print(magnitude)
+
         # Apply point object towards middle (but behind occluder) #TODO does not account for scale of object
         commands.append({"$type": "object_look_at_position", 
                          "position": {"x": self.o_moving_loc['x'], 
@@ -186,10 +227,6 @@ class Occlusion(Runner):
                                       "z": 0},
                           "id": moving_o_id})
         
-        # Find suitable magnitude for force
-        record_moving = get_record_with_name(self.names[0])
-        magnitude = get_magnitude(record_moving)
-        print(magnitude)
         # Apply force
         commands.append({"$type": "apply_force_magnitude_to_object",
                           "magnitude": magnitude,
@@ -211,7 +248,7 @@ class Occlusion(Runner):
 
 if __name__ == "__main__":
     c = Occlusion()
-    success = c.run(num=5, pass_masks=['_img', '_mask'], room='empty', tot_frames=200, add_object_to_scene=False, trial_type='object', png=False)
+    success = c.run(num=5, pass_masks=['_img', '_mask'], room='empty', tot_frames=200, add_object_to_scene=False, trial_type='agent', png=False)
     # The commented code only works for other masks then _img
     # for i in range(30):
     #     c = Occlusion(port=1000+i)
