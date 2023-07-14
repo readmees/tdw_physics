@@ -200,6 +200,26 @@ FAULTY = [
     '128.b04_wallmounted_soap_dispenser_composite'
 ]
 
+EXTRA_FORCE = [
+    'b03_basket',
+    'b04_basket',
+    'elephant_bowl',
+    'box_18inx18inx12in_cardboard',
+    'box_24inx18inx12in_cherry',
+    'box_tapered_beech',
+    'box_tapered_white_mesh',
+    'basket_18inx18inx12iin',
+    'basket_18inx18inx12iin_bamboo',
+    'basket_18inx18inx12iin_plastic_lattice',
+    'basket_18inx18inx12iin_wicker',
+    'box_18inx18inx12in_cardboard',
+    'b03_burger',
+    'box_18inx18inx12in_cardboard',
+    'box_24inx18inx12in_cherry',
+    'box_tapered_beech',
+    'box_tapered_white_mesh',
+]
+
 # Create dictionaries of list with name:index for key:value
 CONTAINERS_DICT = {
     item.split('.')[1]: int(item.split('.')[0])
