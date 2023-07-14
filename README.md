@@ -74,9 +74,11 @@ NOTE: The __Magnitude of force for models core__ graph regards objects from the 
 ![magnitude.png](magnitude.png)
 
 ## TODO
-- Object based trials first version
-- Transition based trials first version
+- ~~Object based trials first version~~
+- ~~Transition based trials first version~~
 - Agent based trials first version
+- Full second version
+- Full final version
 - Make multiple resets again within trial sets, because current version is messy and doesn't work with background objects
 - ~~Streamline platform~~
 - ~~Chose better objects~~
