@@ -91,7 +91,12 @@ class Occlusion(Runner):
                 self.communicate([])
 
             if trial_type == 'agent':
-                self.communicate([])
+                if i>40:
+                    speed = .05
+                    self.communicate([{"$type": "teleport_object_by", "position": {"x": speed, "y": speed, "z": speed}, "id": self.o_ids[0], "absolute": False},
+                                    {"$type": "object_look_at", "other_object_id": self.o_ids[2], "id": self.o_ids[0]},])
+                else:
+                    self.communicate([])
         # Reset the scene by destroying the objects
         destroy_commands = []
         for o_id in self.o_ids:
@@ -158,9 +163,10 @@ class Occlusion(Runner):
         # Put target on same position as agent 
         # But moved in the z position, so it is in front
         position = deepcopy(self.o_moving_loc)
-        off = random.uniform(.1, .5)
+        off = random.uniform(.3, 1)
         position['z'] = position['z'] + bounds[2]/2 + off if self.direction == 'left' else position['z'] - bounds[2]/2 - off
-        
+        position['x'] += random.uniform(-1, 1)
+
         # Set scale
         scale = .2
 
@@ -231,7 +237,7 @@ class Occlusion(Runner):
         commands.append({"$type": "apply_force_magnitude_to_object",
                           "magnitude": magnitude,
                           "id": moving_o_id})
-        
+
         #TODO Make sure objects cannot fly or even bounce  maybe this is not necessary with the right objects
          
         # Keep track of transforms, so we can keep track of the movement
