@@ -66,7 +66,7 @@ def images_to_video(image_folder, video_name, fps, pass_masks, png, save_frames,
     '''From https://github.com/kkroening/ffmpeg-python/blob/master/examples/README.md#assemble-video-from-sequence-of-frames'''
     if save_mp4:
         path_videos = []
-        
+
         # Create mp4 file
         for mask_type in pass_masks:
             # Added for good order of frames
@@ -98,7 +98,7 @@ def images_to_video(image_folder, video_name, fps, pass_masks, png, save_frames,
 
         os.makedirs(f'{image_folder}/', exist_ok=True)
     else:
-        save_frames = None
+        path_frames = None
 
     return path_videos, path_frames
 

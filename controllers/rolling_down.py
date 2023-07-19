@@ -10,11 +10,9 @@ Always make two versions of the exact same trial, object and transition?
 Use collision manager to see when transition needs to happen?
 '''
 from tdw.add_ons.third_person_camera import ThirdPersonCamera
-import random
 
 # Added for Slopes
 import random
-import numpy as np
 
 from helpers.runner_main import Runner
 from helpers.objects import ROLLING_FLIPPED
@@ -113,11 +111,15 @@ class Slope(Runner):
         slope_id = ids[0]
         wall_id = ids[1]
 
+
+        rotation = {"x": 0, "y": 0}
+        rotation["z"] = random.uniform(216, 244) if self.trial_type != 'agent' else 233
+
         # Add slope
         commands.extend(self.get_add_physics_object(model_name="cube",
                                                     library="models_flex.json",
-                                                    object_id=slope_id,
-                                                    rotation={"x": 0, "y": 0, "z": random.uniform(216, 244)},
+                                                    object_id=wall_id,
+                                                    rotation=rotation,
                                                     position={"x": -.5, "y": 0, "z": 0},
                                                     scale_factor = {"x": .8, "y": .8, "z": .9},
                                                     dynamic_friction = 0, 
@@ -135,21 +137,30 @@ class Slope(Runner):
                                                         ))
             # Make wall very bouncy #NOTE this shouldn't do anything, because we already set it in add_physics_object, but it does?
             commands.append({"$type": "set_physic_material", "bounciness": 1, "id": wall_id})
-
         else:
-            ids = [ids[0]]
+            # Add platform on top of slope to make transition and object based trials more similar
+            commands.extend(self.get_add_physics_object(model_name="cube",
+                                                        library="models_flex.json",
+                                                        object_id=slope_id,
+                                                        position={"x": -.41, "y": 0, "z": 0},
+                                                        rotation={"x": 0, "y": 0, "z": 0},
+                                                        scale_factor = {"x": .305, "y": .31, "z": .9},
+                                                        bounciness=1
+                                                        ))    
         
         # # Make slope very 'slippery' #NOTE this shouldn't do anything, because we already set it in add_physics_object, but it does?
         commands.append({"$type": "set_physic_material", "dynamic_friction": 0, "static_friction": 0, "id": slope_id})
         
-
-
+        # Set a random color, make platform the same color as slope
+        color = {"r": random.random(), "g": random.random(), "b": random.random(), "a": 1.0}
         for object_id in ids:
             # Freeze position and rotation for each axis
             commands.extend([{"$type": "set_rigidbody_constraints", "id": object_id, "freeze_position_axes": {"x": 1, "y": 1, "z": 1}, "freeze_rotation_axes": {"x": 1, "y": 1, "z": 1}}])
-            # Set a random color.
+            
+            # Set a random color, make platform the same color as slope
+            color = {"r": random.random(), "g": random.random(), "b": random.random(), "a": 1.0} if self.trial_type != 'agent' else color
             commands.append({"$type": "set_color",
-                            "color": {"r": random.random(), "g": random.random(), "b": random.random(), "a": 1.0},
+                            "color": color,
                             "id": object_id})
         return commands
     
@@ -219,5 +230,5 @@ class Slope(Runner):
     
 if __name__ == "__main__":
     c = Slope()
-    success = c.run(num=5, pass_masks=['_img', '_id'], room='empty', tot_frames=250, add_object_to_scene=True, trial_type='agent', save_frames=False, save_mp4=True)
+    success = c.run(num=2, pass_masks=['_img', '_id'], room='empty', tot_frames=100, add_object_to_scene=True, trial_type='agent', save_frames=False, save_mp4=True)
     print(success)

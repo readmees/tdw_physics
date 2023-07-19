@@ -105,7 +105,7 @@ class Runner(Controller):
         if trial_type not in ['transition', 'agent', 'object']:
             return message("trial_type should be transition', 'agent' or 'object'", 'error')
         
-        if tot_frames < 100 and trial_type in ['transition', 'agent']:
+        if tot_frames < 100 and trial_type in ['transition']: #TODO uncomment, 'agent']:
             return message('Use at least 100 frames for a transition or agent based trials', 'error')
         self.trial_type = trial_type
         
