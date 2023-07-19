@@ -1,7 +1,8 @@
-# STATUS: V1 - Experimential
+# STATUS: V3.1 - Object, Transition and Agent implemented 
 '''
 Readme:
 Objects move mostly in z and y position
+NOTE: stopping is not the same as in occlusion trial and could be perfected
 
 Possible improvements:
 add other objects then cube
@@ -17,7 +18,7 @@ import numpy as np
 
 from helpers.runner_main import Runner
 from helpers.objects import ROLLING_FLIPPED
-from helpers.helpers import get_magnitude, message, get_record_with_name, get_transforms
+from helpers.helpers import get_magnitude, message, get_record_with_name, get_distance
 
 
 class Slope(Runner):
@@ -36,6 +37,11 @@ class Slope(Runner):
         param trial_type: you can choose if you would like to run an trial object, agent or transition based
         param tot_frames: the total amount of frames per trial
         '''
+        # Agent speed
+        speed = .06
+        first_resp = False
+        agent_success = False
+
         #TODO: improve transition
         transition_frame = random.choice(list(range(tot_frames//2, tot_frames)))
         for i in range(tot_frames):
@@ -43,10 +49,16 @@ class Slope(Runner):
                 print('transition, started')
                 self.communicate([{"$type": "teleport_object_by", "position": {"x": -.05, "y": 0.0, "z": 0}, "id": self.o_ids[0], "absolute": True}])
             elif trial_type == 'agent':
-                speed = .04
-                self.communicate([{"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[0], "absolute": False},
-                                {"$type": "object_look_at", "other_object_id": self.o_ids[1], "id": self.o_ids[0]},])
-            
+                if not first_resp:
+                    resp = self.communicate([{"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[0], "absolute": False},
+                                    {"$type": "object_look_at", "other_object_id": self.o_ids[1], "id": self.o_ids[0]},])
+                    first_resp = True
+                elif get_distance(resp, self.o_ids[0], self.o_ids[1]) <.1 or agent_success:
+                    resp = self.communicate([])
+                    agent_success = True
+                else:
+                    resp = self.communicate([{"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[0], "absolute": False},
+                                    {"$type": "object_look_at", "other_object_id": self.o_ids[1], "id": self.o_ids[0]},])
             else:
                 self.communicate([])
 
@@ -68,7 +80,7 @@ class Slope(Runner):
         position = self.o_loc
 
         # Ball doesn't have to roll too much
-        position['y'] = random.uniform(.4,.5)
+        position['y'] = random.uniform(1.4,1.5)
 
         # Drop target on left of slope max, so agent on the right will have to go uphil
         position['x'] =  random.uniform(-.35,-.3)
@@ -83,7 +95,6 @@ class Slope(Runner):
                                                     object_id=target_id,
                                                     position=position,
                                                     scale_factor={"x": scale, "y": scale, "z": scale},
-                                                    mass = 1 # TODO, use real scale
                                                     ))
         # Make target red
         commands.append({"$type": "set_color",
@@ -177,7 +188,7 @@ class Slope(Runner):
             commands = self.add_target(commands)
 
             # Put agent random position
-            position = {"x": random.uniform(1.5, 2), "y": random.uniform(0, .5), "z": random.uniform(-.15,.15)}
+            position = {"x": random.uniform(2.5, 3), "y": random.uniform(0, .5), "z": random.uniform(-.15,.15)}
             
 
         # Add object

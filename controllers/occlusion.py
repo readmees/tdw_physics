@@ -6,6 +6,7 @@ The rotation of the objects is random
 The height and distance of the camera is random for every trial
 The camera is always the same perpendicular z distance from the x axis as the same from the moving object
 The occluder is always on the y and z are always 0 for the occluder
+NOTE: stopping is not the same as in rolling down trial and could be perfected
 
 Possible improvements:
 Use real physics (e.g. mass)
@@ -22,7 +23,7 @@ from typing import Dict
 import random
 from helpers.runner_main import Runner
 from helpers.objects import *
-from helpers.helpers import message, get_two_random_records, get_magnitude, get_record_with_name
+from helpers.helpers import message, get_two_random_records, get_magnitude, get_record_with_name, get_distance
 
 # To keep track of where the moving objects is
 from tdw.output_data import Transforms, OutputData
@@ -42,6 +43,15 @@ class Occlusion(Runner):
         super().__init__(port=port)
     
     def run_per_frame_commands(self, trial_type, tot_frames):
+        # Speed of agent
+        speed = .04
+
+        bounds = np.max(TDWUtils.get_bounds_extents(get_record_with_name(self.names[0]).bounds))/2 
+        bounds += np.max(TDWUtils.get_bounds_extents(get_record_with_name('sphere', json='models_flex.json').bounds))*.2/2 
+
+        agent_success = False
+        first_resp = False
+
         # Check if transition is done
         transition_compl = False             
         
@@ -91,9 +101,20 @@ class Occlusion(Runner):
                 self.communicate([])
 
             if trial_type == 'agent':
-                speed = .025
-                self.communicate([{"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[0], "absolute": False},
-                                {"$type": "object_look_at", "other_object_id": self.o_ids[2], "id": self.o_ids[0]},])
+                if not first_resp:
+                    resp = self.communicate([{"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[0], "absolute": False},
+                                    {"$type": "object_look_at", "other_object_id": self.o_ids[2], "id": self.o_ids[0]},])
+                    first_resp = True
+                elif (get_distance(resp, self.o_ids[0], self.o_ids[2])- bounds) <.05  or agent_success:
+                    print('success')
+                    resp = self.communicate([])
+                    agent_success = True
+                else:
+                    resp = self.communicate([{"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[0], "absolute": False},
+                                    {"$type": "object_look_at", "other_object_id": self.o_ids[2], "id": self.o_ids[0]},])
+                print(get_distance(resp, self.o_ids[0], self.o_ids[2]))
+
+
         # Reset the scene by destroying the objects
         destroy_commands = []
         for o_id in self.o_ids:
@@ -173,7 +194,6 @@ class Occlusion(Runner):
                                                     object_id=target_id,
                                                     position=position,
                                                     scale_factor={"x": scale, "y": scale, "z": scale},
-                                                    mass = 1 # TODO, use real scale
                                                     ))
         # Make target red
         commands.append({"$type": "set_color",
@@ -251,7 +271,7 @@ class Occlusion(Runner):
 
 if __name__ == "__main__":
     c = Occlusion()
-    success = c.run(num=5, pass_masks=['_img', '_mask'], room='empty', tot_frames=400, add_object_to_scene=False, trial_type='agent', png=False)
+    success = c.run(num=5, pass_masks=['_img', '_mask'], room='empty', tot_frames=200, add_object_to_scene=False, trial_type='agent', png=False)
     # The commented code only works for other masks then _img
     # for i in range(30):
     #     c = Occlusion(port=1000+i)

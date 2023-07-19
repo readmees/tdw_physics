@@ -120,7 +120,7 @@ class Runner(Controller):
         controller_name = self.controller_name
         
         # Define path for output data frames
-        self.path_main = '../data/data_temp'
+        self.path_main = '../data/frames_publish_v3'
         path_main = self.path_main
         paths = [f'{path_main}/{name}/{controller_name}/{trial_type}' for name in ['backgrounds', 'videos']]
         path_backgr, path_videos = paths

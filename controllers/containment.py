@@ -19,7 +19,7 @@ import random
 
 from helpers.runner_main import Runner
 from helpers.objects import CONTAINERS, CONTAINED
-from helpers.helpers import get_two_random_records, message, get_transforms, get_magnitude, get_record_with_name
+from helpers.helpers import get_two_random_records, message, get_transforms, get_magnitude, get_record_with_name, get_distance
 
 import numpy as np
 
@@ -37,6 +37,11 @@ class Containment(Runner):
         super().__init__(port=port)
     
     def run_per_frame_commands(self, trial_type, tot_frames):
+        # Agent speed
+        speed = .06
+        first_resp = False
+        agent_success = False
+
         if trial_type == 'transition':
             rotations, positions = [], []
 
@@ -104,13 +109,35 @@ class Containment(Runner):
 
                     # Make room for the next frame
                     rotations, positions = rotations[1:], positions[1:]
-        if trial_type == 'object':
-            for i in range(tot_frames):
+        for i in range(tot_frames):
+            if trial_type == 'object':
                 self.communicate([])
 
-        if trial_type == 'agent':
-            return message('Not implemented yet',  'error')
-        
+            if trial_type == 'agent':
+                if not first_resp:
+                    # Apply a force to the agent from below, so it can jump out of the container
+                    # While the object itself takes a step towards the target
+                    force = get_magnitude(self.o_record)*.25
+                    print(force, self.o_record.name)
+                    resp = self.communicate([{"$type": "apply_force_at_position", 
+                                              "id": self.o_ids[1], 
+                                              "force": {"x":force, "y": force, "z": force}, 
+                                              "position": {"x": self.o_x, "y": -.2, "z": self.o_z}},
+                                             {"$type": "teleport_object_by", 
+                                              "position": {"x": 0, "y": 0, "z": speed}, 
+                                              "id": self.o_ids[1], 
+                                              "absolute": False},
+                                              {"$type": "object_look_at", 
+                                               "other_object_id": self.o_ids[2], 
+                                               "id": self.o_ids[1]},])
+                    first_resp = True
+                elif get_distance(resp, self.o_ids[1], self.o_ids[2]) <.1 or agent_success:
+                    resp = self.communicate([])
+                    agent_success = True
+                else:
+                    resp = self.communicate([{"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[1], "absolute": False},
+                                    {"$type": "object_look_at", "other_object_id": self.o_ids[2], "id": self.o_ids[1]},])
+            
                             
         # Reset the scene by destroying the objects
         destroy_commands = []
@@ -120,6 +147,35 @@ class Containment(Runner):
         destroy_commands.append({"$type": "send_rigidbodies",
                             "frequency": "never"})
         self.communicate(destroy_commands)
+
+    def add_target(self, commands):
+        # self.o_ids = [agent_id, occ_id, target_id]
+        target_id = self.o_ids[2]
+
+        # Put target on same position as agent 
+        # But moved in the z position, so it is in front
+        x = self.o_x + random.uniform(1,.5) if random.choice([True, False]) else self.o_x - random.uniform(1,.5)
+        z = self.o_z + random.uniform(1,.5) if random.choice([True, False]) else self.o_z - random.uniform(1,.5)
+
+        position={"x": x,
+                "y": random.uniform(0, 0.3),
+                "z": z}
+
+        # Set scale
+        scale = .2
+
+        # Add object1
+        commands.extend(self.get_add_physics_object(model_name='sphere',
+                                                    library='models_flex.json',
+                                                    object_id=target_id,
+                                                    position=position,
+                                                    scale_factor={"x": scale, "y": scale, "z": scale},
+                                                    ))
+        # Make target red
+        commands.append({"$type": "set_color",
+                        "color": {"r": 1., "g": 0., "b": 0., "a": 1.},
+                        "id": target_id})
+        return commands
 
     def add_object_to_scene(self, commands):
         '''This method will add a fixed object to the scene that the container has something to balance/shake on,
@@ -135,7 +191,7 @@ class Containment(Runner):
 
         object_id = self.get_unique_id()
 
-        # Add the object
+        # Add the balancer object
         commands.extend(self.get_add_physics_object(model_name=balancer_name,
                                                 library="models_flex.json",
                                                 object_id=object_id,
@@ -185,10 +241,10 @@ class Containment(Runner):
                                                               "y": uniform(-10, 10),
                                                               "z": uniform(-10, 10)}))
         
-        # Add a random target object
+        # Add a random agent object
         self.o_record = records[0]
         o_id = self.get_unique_id()
-        self.o_ids = [container_id, o_id]
+        self.o_ids = [container_id, o_id] if self.trial_type != 'agent' else [container_id, o_id, self.get_unique_id()]
         commands.extend(self.get_add_physics_object(model_name=self.o_record.name,
                                                     library="models_core.json",
                                                     object_id=o_id,
@@ -198,7 +254,9 @@ class Containment(Runner):
                                                     rotation={"x": uniform(-45, 45),
                                                               "y": uniform(-45, 45),
                                                               "z": uniform(-45, 45)}))
-        
+        if self.trial_type == 'agent':
+            commands = self.add_target(commands)
+            
         commands.extend([{"$type": "send_rigidbodies",
                                   "frequency": "always"},
                                  {"$type": "send_transforms",
@@ -208,5 +266,5 @@ class Containment(Runner):
 
 if __name__ == "__main__":
     c = Containment()
-    success = c.run(num=5, pass_masks=['_img', '_mask'] , room='empty', tot_frames=200, add_object_to_scene=True, trial_type='object')
+    success = c.run(num=5, pass_masks=['_img', '_mask'] , room='empty', tot_frames=200, add_object_to_scene=True, trial_type='agent')
     print(success)
