@@ -216,10 +216,12 @@ class Containment(Runner):
     def set_camera(self):
         ''' The avatar_id of the camera should be 'frames_temp' '''
         # Add camera
-        camera = ThirdPersonCamera(position={"x": self.o_x+uniform(-1,1), "y": uniform(3.2,3.4), "z": self.o_z+uniform(-1, 1)},
-                           look_at={"x": self.o_x, "y": 1.0, "z": self.o_z},
+        position, look_at = {"x": self.o_x+uniform(-1, 1), "y": uniform(3.2, 3.4), "z": self.o_z+uniform(-1, 1)}, {"x": self.o_x, "y": 1.0, "z": self.o_z}
+        camera = ThirdPersonCamera(position=position,
+                           look_at=look_at,
                            avatar_id='frames_temp')
         self.add_ons.append(camera)
+        return position, look_at
 
     def trial_initialization_commands(self):
         commands = []

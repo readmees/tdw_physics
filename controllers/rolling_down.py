@@ -37,6 +37,8 @@ class Slope(Runner):
         param trial_type: you can choose if you would like to run an trial object, agent or transition based
         param tot_frames: the total amount of frames per trial
         '''
+        transition_frames = None if trial_type != 'transition' else []
+
         # Agent speed
         speed = .06
         first_resp = False
@@ -46,8 +48,8 @@ class Slope(Runner):
         transition_frame = random.choice(list(range(tot_frames//2, tot_frames)))
         for i in range(tot_frames):
             if i >= transition_frame and trial_type == 'transition':
-                print('transition, started')
                 self.communicate([{"$type": "teleport_object_by", "position": {"x": -.05, "y": 0.0, "z": 0}, "id": self.o_ids[0], "absolute": True}])
+                transition_frames.append(i) 
             elif trial_type == 'agent':
                 if not first_resp:
                     resp = self.communicate([{"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[0], "absolute": False},
@@ -70,6 +72,8 @@ class Slope(Runner):
         destroy_commands.append({"$type": "send_rigidbodies",
                             "frequency": "never"})
         self.communicate(destroy_commands)
+        return transition_frames if transition_frames != [] else -1
+
 
     def add_target(self, commands):
         # self.o_ids = [agent_id, occ_id, target_id]
@@ -158,10 +162,12 @@ class Slope(Runner):
         else:
             position = {"x": 0, "y": 1.2, "z": -1}
 
+        look_at = {"x": 0, "y": 0, "z": 0}
         camera = ThirdPersonCamera(position=position,
-                           look_at={"x": 0, "y": 0, "z": 0},
+                           look_at=look_at,
                            avatar_id='frames_temp')
         self.add_ons.append(camera)
+        return position, look_at
 
     def trial_initialization_commands(self):
         if not self.slope_added:

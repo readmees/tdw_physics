@@ -65,6 +65,8 @@ def get_random_avatar_position(radius_min: float, radius_max: float, y_min: floa
 def images_to_video(image_folder, video_name, fps, pass_masks, png, save_frames, save_mp4):
     '''From https://github.com/kkroening/ffmpeg-python/blob/master/examples/README.md#assemble-video-from-sequence-of-frames'''
     if save_mp4:
+        path_videos = []
+        
         # Create mp4 file
         for mask_type in pass_masks:
             # Added for good order of frames
@@ -81,6 +83,10 @@ def images_to_video(image_folder, video_name, fps, pass_masks, png, save_frames,
                 .output(video_name+f'{mask_type}.mp4', loglevel="quiet")
                 .run()
             )
+
+            path_videos.append(video_name+f'{mask_type}.mp4')
+    else:
+        path_videos = None
     
     if save_frames:
         path_frames = f'{video_name}/'.replace('videos', 'frames')
@@ -91,7 +97,10 @@ def images_to_video(image_folder, video_name, fps, pass_masks, png, save_frames,
         
 
         os.makedirs(f'{image_folder}/', exist_ok=True)
+    else:
+        save_frames = None
 
+    return path_videos, path_frames
 
 def message(message, message_type, progress=None):
     '''

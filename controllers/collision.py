@@ -81,6 +81,8 @@ class Collision(Runner):
                         return transforms.get_position(j)
     
     def run_per_frame_commands(self, trial_type, tot_frames):
+        transition_frames = None
+
         # Check if transition is done
         transition_compl = False  
 
@@ -91,6 +93,7 @@ class Collision(Runner):
 
             # Check if this is object based or transition trial
             if trial_type == 'transition':
+                transition_frames = []
                 # Start transition when the objects are close #NOTE size is not considered
                 if TDWUtils.get_distance(coll_pos, moving_pos) < random.uniform(0.8,1):
                     transition_compl = True
@@ -102,6 +105,9 @@ class Collision(Runner):
                                                     "z": speed[1]}, 
                                        "id": self.o_ids[0], 
                                        "absolute": True}])
+                    
+                    # Save frame number of transition(s)
+                    transition_frames.append(i)
                 else:
                     # Store response and make frame
                     resp = self.communicate([])
@@ -125,15 +131,18 @@ class Collision(Runner):
         destroy_commands.append({"$type": "send_rigidbodies",
                             "frequency": "never"})
         self.communicate(destroy_commands)
+        return transition_frames if transition_frames != [] else -1
 
     def set_camera(self):
         ''' The avatar_id of the camera should be 'frames_temp'
         '''
         # Add camera
-        self.camera = ThirdPersonCamera(position={"x": -1, "y": 1.5, "z": -2},
-                           look_at={"x": 0, "y": 0, "z": 0},
+        position, look_at = {"x": -1, "y": 1.5, "z": -2}, {"x": 0, "y": 0, "z": 0}
+        self.camera = ThirdPersonCamera(position=position,
+                           look_at=look_at,
                            avatar_id='frames_temp')
         self.add_ons.append(self.camera)
+        return position, look_at
         
     def trial_initialization_commands(self):
         # Could be extended to multiple objects one day
@@ -144,7 +153,7 @@ class Collision(Runner):
         coll_id, move_id = self.o_ids
 
         # Choose between falling or force collisions
-        coll_type = random.choice(['fall', 'force'])
+        coll_type = random.choice(['fall', 'force']) if self.trial_type != 'agent' else 'agent'
 
         # Get positions based on collision type
         self.positions = self.set_fall_postions() if coll_type == 'fall' else self.set_force_positions()
@@ -195,5 +204,5 @@ class Collision(Runner):
     
 if __name__ == "__main__":
     c = Collision()
-    success = c.run(num=20, pass_masks=['_img'], room='empty', add_object_to_scene=False, tot_frames=150, png=False, trial_type='object', save_mp4=True)
+    success = c.run(num=2, pass_masks=['_img'], room='empty', add_object_to_scene=False, tot_frames=150, png=False, trial_type='object', save_mp4=True)
     print(success)

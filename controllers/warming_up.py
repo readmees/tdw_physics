@@ -72,10 +72,12 @@ class UpWarmer(Runner):
     def set_camera(self):
         ''' The avatar_id of the camera should be 'frames_temp' '''
         # Add camera
+        look_at = {"x": 0, "y": 0, "z": 0}
         self.camera = ThirdPersonCamera(position=self.camera_pos,
-                           look_at={"x": 0, "y": 0, "z": 0},
+                           look_at=look_at,
                            avatar_id='frames_temp')
         self.add_ons.append(self.camera)
+        return self.camera_pos, look_at
         
     def trial_initialization_commands(self):
         # Choose between falling or force collision #TODO check if random choice still works

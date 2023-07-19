@@ -43,6 +43,8 @@ class Occlusion(Runner):
         super().__init__(port=port)
     
     def run_per_frame_commands(self, trial_type, tot_frames):
+        transition_start_frame = None
+
         # Speed of agent
         speed = .04
 
@@ -69,6 +71,7 @@ class Occlusion(Runner):
         for i in range(tot_frames):
             # Check if this is object based or transition trial
             if trial_type == 'transition':
+                transition_start_frame = []
                 # Start transition when it's behind the object #TODO: adjust for line of camera
                 if self.o_moving_loc['z'] > stop_moving and self.direction == 'left' or self.o_moving_loc['z'] < stop_moving and self.direction == 'right':
                     commands = []
@@ -84,6 +87,7 @@ class Occlusion(Runner):
                         commands.extend([{"$type": "set_rigidbody_constraints", "id": self.o_ids[0], "freeze_position_axes": {"x": 0, "y": 0, "z": 0}, "freeze_rotation_axes": {"x": 0, "y": 0, "z": 0}}])
 
                     # Start 'manual' movement
+                    transition_start_frame.append(i)
                     commands.extend([{"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[0], "absolute": True}])
                     self.communicate(commands)
                 else:
@@ -93,8 +97,6 @@ class Occlusion(Runner):
                     # Update previous position with current position, only update z position 
                     # #NOTE: I assume here that the output of get_ob_pos is [x, y, z]
                     for axis_name, axis_val in zip(['x', 'y', 'z'], self.get_ob_pos(self.o_ids[0], resp)):
-                        if isinstance(axis_val, str):
-                            return axis_val
                         self.o_moving_loc[axis_name] = axis_val
                         
             if trial_type == 'object':
@@ -123,6 +125,8 @@ class Occlusion(Runner):
         destroy_commands.append({"$type": "send_rigidbodies",
                             "frequency": "never"})
         self.communicate(destroy_commands)
+
+        return transition_start_frame if transition_start_frame != [] else -1
       
     def add_occ_objects(self):
         '''This method adds two objects to the scene, one moving and one occluder'''
@@ -156,10 +160,12 @@ class Occlusion(Runner):
     
     def set_camera(self):
         # Add camera
+        look_at = {"x": 0, "y": 0, "z": 0}
         self.camera = ThirdPersonCamera(position=self.camera_pos,
-                           look_at={"x": 0, "y": 0, "z": 0},
+                           look_at=look_at,
                            avatar_id='frames_temp')
         self.add_ons.append(self.camera)
+        return self.camera_pos, look_at
     
     def get_ob_pos(self, o_id, resp):
         '''Get object position'''
@@ -271,7 +277,7 @@ class Occlusion(Runner):
 
 if __name__ == "__main__":
     c = Occlusion()
-    success = c.run(num=5, pass_masks=['_img', '_mask'], room='empty', tot_frames=200, add_object_to_scene=False, trial_type='agent', png=False)
+    success = c.run(num=5, pass_masks=['_img', '_mask'], room='empty', tot_frames=200, add_object_to_scene=False, trial_type='transition', png=False)
     # The commented code only works for other masks then _img
     # for i in range(30):
     #     c = Occlusion(port=1000+i)

@@ -10,6 +10,7 @@ import os
 from helpers.helpers import images_to_video, message, get_transforms
 import time
 from tdw.librarian import ModelLibrarian
+import pandas as pd
 
 class Runner(Controller):
     def __init__(self, port=1071):
@@ -39,6 +40,7 @@ class Runner(Controller):
         destroy_commands.append({"$type": "send_rigidbodies",
                             "frequency": "never"})
         self.communicate(destroy_commands)
+        return None
     
     def get_transforms_by_run(self, o_id, commands):
         '''Extension on get_transforms from helpers.helpers;
@@ -116,11 +118,11 @@ class Runner(Controller):
         self.add_ons.clear()
 
         # Set camera
-        self.set_camera()
+        cam_position, cam_look_at = self.set_camera()
         controller_name = self.controller_name
         
         # Define path for output data frames
-        self.path_main = '../data/frames_publish_v3'
+        self.path_main = '../data/temp'
         path_main = self.path_main
         paths = [f'{path_main}/{name}/{controller_name}/{trial_type}' for name in ['backgrounds', 'videos']]
         path_backgr, path_videos = paths
@@ -190,6 +192,14 @@ class Runner(Controller):
         shutil.rmtree(path_frames)
         os.makedirs(path_frames)
 
+        # Load csv, make if it doesn't exist
+        try:
+            df = pd.read_csv(f'{path_main}/info.csv', index_col=False)
+        except FileNotFoundError:
+            df = pd.DataFrame(index=None, columns=('trial_id', 'trial_num', 'path_videos', 'path_frames', 'num', 'trial_type', 
+                                                   'png', 'pass_masks', 'framerate', 'room', 'tot_frames', 'add_object_to_scene', 
+                                                   'save_frames', 'save_mp4', 'transition_start_frames', 'cam_position', 'cam_look_at'))
+
         print(f"Video of trial n will be saved at {path_videos}/{trial_type}/{trial_id}_trial_n.mp4")
         for trial_num in range(num):
             # Initialize trial and return errors if something is wrong
@@ -197,17 +207,34 @@ class Runner(Controller):
             if not isinstance(trial_commands, list):
                 return trial_commands
             
-            #TODO see if this is necessary
+            #TODO see if this is necessary #NOTE First frame gets removed
             self.communicate(trial_commands)
 
-            self.run_per_frame_commands(trial_type=trial_type, tot_frames=tot_frames)
+            # Remove previous frames (if possible), this is needed to make sure that frame 1 is really frame 1
+            try:
+                shutil.rmtree(path_frames)
+            except FileNotFoundError:
+                pass
+            os.makedirs(path_frames, exist_ok=True)
+
+            transition_start_frames = self.run_per_frame_commands(trial_type=trial_type, tot_frames=tot_frames)
             
             # Specify the output video file name
             output_video = f"{path_videos}/{trial_id}_trial_{trial_num}"
 
             # Convert images to videos
-            images_to_video(path_frames, output_video, framerate, pass_masks, png, save_frames, save_mp4)
+            path_videos_saved, path_frames_saved = images_to_video(path_frames, output_video, framerate, pass_masks, png, save_frames, save_mp4)
             shutil.rmtree(path_frames)
+
+            # Save progress in csv file #NOTE: not tested very well
+            params = (trial_id, trial_num, path_videos_saved, path_frames_saved, num, trial_type, png, pass_masks, framerate, room, 
+            tot_frames, add_object_to_scene, save_frames, save_mp4, transition_start_frames, cam_position, cam_look_at)
+            try:
+                df = df.drop(columns='Unnamed: 0')
+            except KeyError:
+                pass
+            df.loc[len(df)] = params
+            df.to_csv(f'{path_main}/info.csv')
 
             # Show progress
             message(f'Progress trials ({trial_num+1}/{num})', 'success', round((trial_num+1)/num*10))

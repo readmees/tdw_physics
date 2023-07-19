@@ -46,13 +46,16 @@ class Object_tester(Controller):
         destroy_commands.append({"$type": "send_rigidbodies",
                             "frequency": "never"})
         self.communicate(destroy_commands)
+        return None
     
     def set_camera(self):
         # Add camera
-        camera = ThirdPersonCamera(position={"x": 2, "y": 1.6, "z": -1},
-                           look_at={"x": 0, "y": 0, "z": 0},
+        position, look_at = {"x": 2, "y": 1.6, "z": -1}, {"x": 0, "y": 0, "z": 0}
+        camera = ThirdPersonCamera(position=position,
+                           look_at=look_at,
                            avatar_id=self.controller_name)
         self.add_ons.append(camera)
+        return position, look_at
     
     def run(self, num=5, trial_type='object', png=False, pass_masks=["_img", "_mask"], framerate = 30, room='random', 
             tot_frames=200):
