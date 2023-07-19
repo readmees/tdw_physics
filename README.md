@@ -41,7 +41,8 @@ cd controllers
 5. Might have to run again:
  ```open TDW.app;python occlusion.py```
 ## Copyright
-A lot of this code is from the [tdw_physics](https://github.com/alters-mit/tdw_physics) repository, Copyright (c) 2021 Seth Alter
+A lot of this code is based on, or an edited version of the code in the [tdw_physics](https://github.com/alters-mit/tdw_physics) repository, Copyright (c) 2021 Seth Alter
+However, I put in many hours in to shape, so plese also consider, Copyright (c) 2023 Mees Meester
 
 ## Notes
 - Not all the scenes are tested, trials are tested in empty room, so objects might spawn in walls etc. or empty frames mith be
