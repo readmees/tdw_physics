@@ -38,9 +38,12 @@ class Containment(Runner):
     
     def run_per_frame_commands(self, trial_type, tot_frames):
         # Agent speed
-        speed = .06
+        speed, up_speed = .06, .06
         first_resp = False
         agent_success = False
+
+        bounds = np.max(TDWUtils.get_bounds_extents(self.o_record .bounds))/2 
+        bounds += np.max(TDWUtils.get_bounds_extents(get_record_with_name('sphere', json='models_flex.json').bounds))*.2/2 
 
         if trial_type == 'transition':
             rotations, positions = [], []
@@ -114,29 +117,27 @@ class Containment(Runner):
                 self.communicate([])
 
             if trial_type == 'agent':
-                if not first_resp:
-                    # Apply a force to the agent from below, so it can jump out of the container
-                    # While the object itself takes a step towards the target
-                    force = get_magnitude(self.o_record)*.25
-                    print(force, self.o_record.name)
-                    resp = self.communicate([{"$type": "apply_force_at_position", 
+                up_speed -= .005 if up_speed > 0 else 0
+                commands = [{"$type": "teleport_object_by", 
+                                              "position": {"x": 0, "y": up_speed, "z": 0}, 
                                               "id": self.o_ids[1], 
-                                              "force": {"x":force, "y": force, "z": force}, 
-                                              "position": {"x": self.o_x, "y": -.2, "z": self.o_z}},
+                                              "absolute": True},
                                              {"$type": "teleport_object_by", 
                                               "position": {"x": 0, "y": 0, "z": speed}, 
                                               "id": self.o_ids[1], 
                                               "absolute": False},
                                               {"$type": "object_look_at", 
                                                "other_object_id": self.o_ids[2], 
-                                               "id": self.o_ids[1]},])
+                                               "id": self.o_ids[1]},]
+                if not first_resp:
+                    resp = self.communicate(commands)
                     first_resp = True
-                elif get_distance(resp, self.o_ids[1], self.o_ids[2]) <.1 or agent_success:
+                elif (get_distance(resp, self.o_ids[1], self.o_ids[2])- bounds) <.06  or agent_success:
                     resp = self.communicate([])
                     agent_success = True
                 else:
-                    resp = self.communicate([{"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[1], "absolute": False},
-                                    {"$type": "object_look_at", "other_object_id": self.o_ids[2], "id": self.o_ids[1]},])
+                    resp = self.communicate(commands)
+
             
                             
         # Reset the scene by destroying the objects
@@ -215,7 +216,7 @@ class Containment(Runner):
     def set_camera(self):
         ''' The avatar_id of the camera should be 'frames_temp' '''
         # Add camera
-        camera = ThirdPersonCamera(position={"x": self.o_x+uniform(-1,1), "y": uniform(2.8,3.2), "z": self.o_z+uniform(-1, 1)},
+        camera = ThirdPersonCamera(position={"x": self.o_x+uniform(-1,1), "y": uniform(3.2,3.4), "z": self.o_z+uniform(-1, 1)},
                            look_at={"x": self.o_x, "y": 1.0, "z": self.o_z},
                            avatar_id='frames_temp')
         self.add_ons.append(camera)
