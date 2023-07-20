@@ -36,6 +36,8 @@ class Slope(Runner):
         param tot_frames: the total amount of frames per trial
         '''
         transition_frames = None if trial_type != 'transition' else []
+        transition_activated = False
+        moving_o_id, wall_id = self.o_ids[0], self.scene_o_ids[1]
 
         # Agent speed
         speed = .06
@@ -45,9 +47,17 @@ class Slope(Runner):
         #TODO: improve transition
         transition_frame = random.choice(list(range(tot_frames//2, tot_frames)))
         for i in range(tot_frames):
-            if i >= transition_frame and trial_type == 'transition':
-                self.communicate([{"$type": "teleport_object_by", "position": {"x": -.05, "y": 0.0, "z": 0}, "id": self.o_ids[0], "absolute": True}])
-                transition_frames.append(i) 
+            if i >= 1 and trial_type == 'transition':
+                # self.o_ids[0] is agent, self.scene_o_ids[1]was
+                if get_distance(resp, moving_o_id, wall_id) < .25 and not transition_activated:
+                    # Get suitable, yet random force
+                    force = get_magnitude(get_record_with_name(self.object_choice))
+                    print('transition')
+                    resp = self.communicate([{"$type": "add_constant_force", "id": self.o_ids[0], "force": {"x": -force, "y": 0, "z": 0}, "relative_force": {"x": 0, "y": 0, "z": 0}, "torque": {"x": 0, "y": 0, "z": 0}, "relative_torque": {"x": 0, "y": 0, "z": 0}}])
+                    transition_activated = True
+                    transition_frames.append(i)
+                else:
+                    resp = self.communicate([])
             elif trial_type == 'agent':
                 if not first_resp:
                     resp = self.communicate([{"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[0], "absolute": False},
@@ -60,7 +70,7 @@ class Slope(Runner):
                     resp = self.communicate([{"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[0], "absolute": False},
                                     {"$type": "object_look_at", "other_object_id": self.o_ids[1], "id": self.o_ids[0]},])
             else:
-                self.communicate([])
+                resp = self.communicate([])
 
         destroy_commands = []
         for o_id in self.o_ids:
@@ -92,12 +102,15 @@ class Slope(Runner):
         scale = .2
 
         # Add object1
-        commands.extend(self.get_add_physics_object(model_name='sphere',
-                                                    library='models_flex.json',
+        commands.extend(self.get_add_physics_object(model_name='102_pepsi_can_12_fl_oz_vray',
+                                                    library='models_core.json',
                                                     object_id=target_id,
                                                     position=position,
                                                     scale_factor={"x": scale, "y": scale, "z": scale},
+                                                    bounciness=.1
                                                     ))
+        commands.append({"$type": "set_physic_material", "bounciness": .1, "id": target_id})
+        
         # Make target red
         commands.append({"$type": "set_color",
                         "color": {"r": 1., "g": 0., "b": 0., "a": 1.},
@@ -108,6 +121,7 @@ class Slope(Runner):
         '''This method adds a slope for the rolling down trials, by adding a freezed cube object and a wall to bounce too
         since the object will not change during trials and is fixed in place, it will be added to the background shot'''
         ids = [self.get_unique_id(), self.get_unique_id()]
+        self.scene_o_ids = ids
         slope_id = ids[0]
         wall_id = ids[1]
 
@@ -118,7 +132,7 @@ class Slope(Runner):
         # Add slope
         commands.extend(self.get_add_physics_object(model_name="cube",
                                                     library="models_flex.json",
-                                                    object_id=wall_id,
+                                                    object_id=slope_id,
                                                     rotation=rotation,
                                                     position={"x": -.5, "y": 0, "z": 0},
                                                     scale_factor = {"x": .8, "y": .8, "z": .9},
@@ -140,16 +154,20 @@ class Slope(Runner):
         else:
             # Add platform on top of slope to make transition and object based trials more similar
             commands.extend(self.get_add_physics_object(model_name="cube",
-                                                        library="models_flex.json",
-                                                        object_id=slope_id,
-                                                        position={"x": -.41, "y": 0, "z": 0},
-                                                        rotation={"x": 0, "y": 0, "z": 0},
-                                                        scale_factor = {"x": .305, "y": .31, "z": .9},
-                                                        bounciness=1
-                                                        ))    
+                                            library="models_flex.json",
+                                            object_id=wall_id,
+                                            rotation={"x": 0, "y": 0, "z": 0},
+                                            position={"x": -.5, "y": 0, "z": 0},
+                                            scale_factor = {"x": .8, "y": .8, "z": .9},
+                                            dynamic_friction = 0, 
+                                            static_friction = 0,
+                                            bounciness=0))
+            commands.append({"$type": "set_physic_material", "bounciness": 0, "id": wall_id})
+            
         
         # # Make slope very 'slippery' #NOTE this shouldn't do anything, because we already set it in add_physics_object, but it does?
         commands.append({"$type": "set_physic_material", "dynamic_friction": 0, "static_friction": 0, "id": slope_id})
+        commands.append({"$type": "set_physic_material", "dynamic_friction": 0, "static_friction": 0, "id": wall_id})
         
         # Set a random color, make platform the same color as slope
         color = {"r": random.random(), "g": random.random(), "b": random.random(), "a": 1.0}
@@ -192,6 +210,7 @@ class Slope(Runner):
         commands = []
 
         object_choice = random.choice(self.objects)
+        self.object_choice = object_choice
 
         # Flip object if needed to roll, e.g. cola can
         rotation_x = 0 if object_choice not in ROLLING_FLIPPED else random.choice([90, -90])
@@ -223,12 +242,9 @@ class Slope(Runner):
                        "frequency": "always"},
                       {"$type": "send_static_rigidbodies",
                        "frequency": "once"}])
-        
-        # Get suitable random force magnitude
-        force = get_magnitude(get_record_with_name(object_choice))*.25
         return commands
     
 if __name__ == "__main__":
     c = Slope()
-    success = c.run(num=2, pass_masks=['_img', '_id'], room='empty', tot_frames=100, add_object_to_scene=True, trial_type='agent', save_frames=False, save_mp4=True)
+    success = c.run(num=2, pass_masks=['_img', '_id'], room='empty', tot_frames=300, add_object_to_scene=True, trial_type='transition', save_frames=False, save_mp4=True)
     print(success)
