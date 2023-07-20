@@ -7,7 +7,6 @@ NOTE: stopping is not the same as in occlusion trial and could be perfected
 Possible improvements:
 add other objects then cube
 Always make two versions of the exact same trial, object and transition?
-Use collision manager to see when transition needs to happen?
 '''
 from tdw.add_ons.third_person_camera import ThirdPersonCamera
 
@@ -16,7 +15,7 @@ import random
 
 from helpers.runner_main import Runner
 from helpers.objects import ROLLING_FLIPPED
-from helpers.helpers import get_magnitude, message, get_record_with_name, get_distance
+from helpers.helpers import get_magnitude, message, get_record_with_name, get_distance, get_transforms
 
 
 class Slope(Runner):
@@ -44,14 +43,13 @@ class Slope(Runner):
         first_resp = False
         agent_success = False
 
-        #TODO: improve transition
-        transition_frame = random.choice(list(range(tot_frames//2, tot_frames)))
+        # Get suitable, yet random force
+        force = get_magnitude(get_record_with_name(self.object_choice))
+
         for i in range(tot_frames):
             if i >= 1 and trial_type == 'transition':
                 # self.o_ids[0] is agent, self.scene_o_ids[1]was
                 if get_distance(resp, moving_o_id, wall_id) < .25 and not transition_activated:
-                    # Get suitable, yet random force
-                    force = get_magnitude(get_record_with_name(self.object_choice))
                     print('transition')
                     resp = self.communicate([{"$type": "add_constant_force", "id": self.o_ids[0], "force": {"x": -force, "y": 0, "z": 0}, "relative_force": {"x": 0, "y": 0, "z": 0}, "torque": {"x": 0, "y": 0, "z": 0}, "relative_torque": {"x": 0, "y": 0, "z": 0}}])
                     transition_activated = True
@@ -59,16 +57,17 @@ class Slope(Runner):
                 else:
                     resp = self.communicate([])
             elif trial_type == 'agent':
+                print(self.object_choice)
                 if not first_resp:
-                    resp = self.communicate([{"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[0], "absolute": False},
-                                    {"$type": "object_look_at", "other_object_id": self.o_ids[1], "id": self.o_ids[0]},])
+                    resp = self.communicate([{"$type": "object_look_at", "other_object_id": self.o_ids[1], "id": self.o_ids[0]},
+                                             {"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[0], "absolute": False}])
                     first_resp = True
                 elif get_distance(resp, self.o_ids[0], self.o_ids[1]) <.1 or agent_success:
                     resp = self.communicate([])
                     agent_success = True
                 else:
-                    resp = self.communicate([{"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[0], "absolute": False},
-                                    {"$type": "object_look_at", "other_object_id": self.o_ids[1], "id": self.o_ids[0]},])
+                    resp = self.communicate([{"$type": "object_look_at", "other_object_id": self.o_ids[1], "id": self.o_ids[0]},
+                                             {"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[0], "absolute": False}])
             else:
                 resp = self.communicate([])
 

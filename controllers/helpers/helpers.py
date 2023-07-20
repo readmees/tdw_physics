@@ -237,7 +237,7 @@ def get_magnitude(record, randomness=5):
 def get_distance(resp, o_id1, o_id2):
     '''Returns the distance between two objects, returns infinitely big number if resp is empty list'''
     if not resp:
-        print('not')
+        print('no response')
         return np.inf
     point1 = {axis:value for axis, value in zip(['x', 'y', 'z'], get_transforms(resp, o_id1)[1])}
     point2 = {axis:value for axis, value in zip(['x', 'y', 'z'], get_transforms(resp, o_id2)[1])}
