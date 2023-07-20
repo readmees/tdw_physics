@@ -98,19 +98,17 @@ class Slope(Runner):
         position['x'] =  random.uniform(-.35,-.3)
         
 
+
         # Set scale
         scale = .2
 
-        # Add object1
-        commands.extend(self.get_add_physics_object(model_name='102_pepsi_can_12_fl_oz_vray',
-                                                    library='models_core.json',
+        # Add target
+        commands.extend(self.get_add_physics_object(model_name='sphere',
+                                                    library='models_flex.json',
                                                     object_id=target_id,
                                                     position=position,
                                                     scale_factor={"x": scale, "y": scale, "z": scale},
-                                                    bounciness=.1
                                                     ))
-        commands.append({"$type": "set_physic_material", "bounciness": .1, "id": target_id})
-        
         # Make target red
         commands.append({"$type": "set_color",
                         "color": {"r": 1., "g": 0., "b": 0., "a": 1.},
@@ -150,24 +148,12 @@ class Slope(Runner):
                                                         bounciness=1
                                                         ))
             # Make wall very bouncy #NOTE this shouldn't do anything, because we already set it in add_physics_object, but it does?
-            commands.append({"$type": "set_physic_material", "bounciness": 1, "id": wall_id})
+            commands.append({"$type": "set_physic_material", "bounciness": 1, "id": wall_id})    
         else:
-            # Add platform on top of slope to make transition and object based trials more similar
-            commands.extend(self.get_add_physics_object(model_name="cube",
-                                            library="models_flex.json",
-                                            object_id=wall_id,
-                                            rotation={"x": 0, "y": 0, "z": 0},
-                                            position={"x": -.5, "y": 0, "z": 0},
-                                            scale_factor = {"x": .8, "y": .8, "z": .9},
-                                            dynamic_friction = 0, 
-                                            static_friction = 0,
-                                            bounciness=0))
-            commands.append({"$type": "set_physic_material", "bounciness": 0, "id": wall_id})
-            
+            ids = [slope_id]
         
         # # Make slope very 'slippery' #NOTE this shouldn't do anything, because we already set it in add_physics_object, but it does?
         commands.append({"$type": "set_physic_material", "dynamic_friction": 0, "static_friction": 0, "id": slope_id})
-        commands.append({"$type": "set_physic_material", "dynamic_friction": 0, "static_friction": 0, "id": wall_id})
         
         # Set a random color, make platform the same color as slope
         color = {"r": random.random(), "g": random.random(), "b": random.random(), "a": 1.0}
@@ -246,5 +232,5 @@ class Slope(Runner):
     
 if __name__ == "__main__":
     c = Slope()
-    success = c.run(num=2, pass_masks=['_img', '_id'], room='empty', tot_frames=300, add_object_to_scene=True, trial_type='transition', save_frames=False, save_mp4=True)
+    success = c.run(num=2, pass_masks=['_img', '_id'], room='empty', tot_frames=300, add_object_to_scene=True, trial_type='agent', save_frames=False, save_mp4=True)
     print(success)
