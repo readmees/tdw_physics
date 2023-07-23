@@ -46,7 +46,7 @@ CONTAINED = [
     '76.b03_spoon_001',
     '77.b03_toothbrush',
     '82.b04_3d_jar_180_gr_01',
-    '90.b04_bottle-2014-2018',
+    # '90.b04_bottle-2014-2018', #TypeError: 'NoneType' object is not iterable
     '91.b04_bottle_20ml',
     '284.chocolate_bar001',
     # '282.champagne_cork', #Scale is too big
@@ -167,7 +167,7 @@ OCCLUDED = [
     '76.b03_spoon_001',
     '77.b03_toothbrush',
     '82.b04_3d_jar_180_gr_01',
-    '90.b04_bottle-2014-2018',
+    # '90.b04_bottle-2014-2018', #TypeError: 'NoneType' object is not iterable
     '91.b04_bottle_20ml',
     '284.chocolate_bar001',
     # '282.champagne_cork', #Scale is too big
@@ -181,7 +181,7 @@ ROLLING_FLIPPED = [
     '16.9v_battery',
     '17.aaa_battery',
     '50.b03_cocacola_can_cage',
-    '90.b04_bottle-2014-2018',
+    # '90.b04_bottle-2014-2018', #TypeError: 'NoneType' object is not iterable
     '91.b04_bottle_20ml',
     # '92.b04_bottle_2_max', #? two bottles
     # '93.b04_bottle_max' #TWO bottles

@@ -4,7 +4,7 @@ Readme:
 The scales of the objects are random
 The rotation of the objects is random
 The height and distance of the camera is random for every trial
-The camera is always the same perpendicular z distance from the x axis as the same from the moving object
+The camera is always the same perpendicular x distance from the z axis as the same from the moving object
 The occluder is always on the y and z are always 0 for the occluder
 NOTE: stopping is not the same as in rolling down trial and could be perfected
 
@@ -117,6 +117,10 @@ class Occlusion(Runner):
                 print(get_distance(resp, self.o_ids[0], self.o_ids[2]))
 
 
+            # Check if occluder is occluding one side of the screen as well
+            img = Image.open('Sample.png')
+            numpydata = np.asarray(img)
+
         # Reset the scene by destroying the objects
         destroy_commands = []
         for o_id in self.o_ids:
@@ -228,7 +232,7 @@ class Occlusion(Runner):
         if self.trial_type == 'agent':
             commands = self.add_target(commands, bounds[0])
 
-        # Teleport camera same distance from occluder as moving object
+        # Teleport camera same perpendicular x distance to z axis from occluder as moving object
         #TODO check if moving camera creates problems
         self.camera_pos['x'] = -self.o_moving_loc['x']
 

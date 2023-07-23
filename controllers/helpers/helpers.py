@@ -135,8 +135,8 @@ def message(message, message_type, progress=None):
     else:
         progress_bar = "[" + "#" * progress + "-" * (10 - progress) + "]"
         formatted_message = f"{color_code}{full_message}{reset_code} {progress_bar} {progress * 10}%"
-        print(formatted_message, end="\r")
-        sys.stdout.flush()
+        # print(formatted_message, end="\r")
+        # sys.stdout.flush()
         
     return formatted_message+"\r"
 

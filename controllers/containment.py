@@ -79,7 +79,7 @@ class Containment(Runner):
                         # for y, this is halfway the container
                         max_distance = np.abs(np.array([bound for bound in self.bounds[1]]))
 
-                        # Activatie transition only if the object is inside container #NOTE this is not perfect
+                        # Activate transition only if the object is inside container #NOTE this is not perfect
                         activate_transition = (o_relative_position<max_distance).all()
 
                         if activate_transition:

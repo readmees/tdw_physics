@@ -17,6 +17,8 @@ from helpers.runner_main import Runner
 from helpers.objects import ROLLING_FLIPPED
 from helpers.helpers import get_magnitude, message, get_record_with_name, get_distance, get_transforms
 
+import shutil
+import os
 
 class Slope(Runner):
     def __init__(self):
@@ -37,6 +39,7 @@ class Slope(Runner):
         transition_frames = None if trial_type != 'transition' else []
         transition_activated = False
         moving_o_id, wall_id = self.o_ids[0], self.scene_o_ids[1]
+        print(self.object_choice)
 
         # Agent speed
         speed = .06
@@ -45,31 +48,37 @@ class Slope(Runner):
 
         # Get suitable, yet random force
         force = get_magnitude(get_record_with_name(self.object_choice))
-
+        
+        trial_success = True
         for i in range(tot_frames):
-            if i >= 1 and trial_type == 'transition':
-                # self.o_ids[0] is agent, self.scene_o_ids[1]was
-                if get_distance(resp, moving_o_id, wall_id) < .25 and not transition_activated:
-                    print('transition')
-                    resp = self.communicate([{"$type": "add_constant_force", "id": self.o_ids[0], "force": {"x": -force, "y": 0, "z": 0}, "relative_force": {"x": 0, "y": 0, "z": 0}, "torque": {"x": 0, "y": 0, "z": 0}, "relative_torque": {"x": 0, "y": 0, "z": 0}}])
-                    transition_activated = True
-                    transition_frames.append(i)
+            try:
+                if i >= 1 and trial_type == 'transition':
+                    # self.o_ids[0] is agent, self.scene_o_ids[1]was
+                    if get_distance(resp, moving_o_id, wall_id) < .25 and not transition_activated:
+                        print('transition')
+                        resp = self.communicate([{"$type": "add_constant_force", "id": self.o_ids[0], "force": {"x": -force, "y": 0, "z": 0}, "relative_force": {"x": 0, "y": 0, "z": 0}, "torque": {"x": 0, "y": 0, "z": 0}, "relative_torque": {"x": 0, "y": 0, "z": 0}}])
+                        transition_activated = True
+                        transition_frames.append(i)
+                    else:
+                        resp = self.communicate([])
+                elif trial_type == 'agent':
+                    if not first_resp:
+                        resp = self.communicate([{"$type": "object_look_at", "other_object_id": self.o_ids[1], "id": self.o_ids[0]},
+                                                {"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[0], "absolute": False}])
+                        first_resp = True
+                    elif get_distance(resp, self.o_ids[0], self.o_ids[1]) <.1 or agent_success:
+                        resp = self.communicate([])
+                        agent_success = True
+                    else:
+                        resp = self.communicate([{"$type": "object_look_at", "other_object_id": self.o_ids[1], "id": self.o_ids[0]},
+                                                {"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[0], "absolute": False}])
                 else:
                     resp = self.communicate([])
-            elif trial_type == 'agent':
-                print(self.object_choice)
-                if not first_resp:
-                    resp = self.communicate([{"$type": "object_look_at", "other_object_id": self.o_ids[1], "id": self.o_ids[0]},
-                                             {"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[0], "absolute": False}])
-                    first_resp = True
-                elif get_distance(resp, self.o_ids[0], self.o_ids[1]) <.1 or agent_success:
-                    resp = self.communicate([])
-                    agent_success = True
-                else:
-                    resp = self.communicate([{"$type": "object_look_at", "other_object_id": self.o_ids[1], "id": self.o_ids[0]},
-                                             {"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[0], "absolute": False}])
-            else:
+            except TypeError:
+                #NOTE Somehow it seems important to communicate one more time anyways, otherwise the objects do not get removed properly
                 resp = self.communicate([])
+                # Sometimes we get TypeError: 'NoneType' object is not iterable, when trying to get the transforms
+                trial_success = False
 
         destroy_commands = []
         for o_id in self.o_ids:
@@ -79,7 +88,10 @@ class Slope(Runner):
         destroy_commands.append({"$type": "send_rigidbodies",
                             "frequency": "never"})
         self.communicate(destroy_commands)
-        return transition_frames if transition_frames != [] else -1
+
+        if not trial_success:
+            return 'Fail', trial_success
+        return transition_frames if transition_frames != [] else -1, True
 
 
     def add_target(self, commands):
@@ -124,7 +136,7 @@ class Slope(Runner):
 
 
         rotation = {"x": 0, "y": 0}
-        rotation["z"] = random.uniform(216, 244) if self.trial_type != 'agent' else 233
+        rotation["z"] = random.uniform(216, 244) if self.trial_type != 'agent' else 244
 
         # Add slope
         commands.extend(self.get_add_physics_object(model_name="cube",
@@ -231,5 +243,5 @@ class Slope(Runner):
     
 if __name__ == "__main__":
     c = Slope()
-    success = c.run(num=2, pass_masks=['_img', '_id'], room='empty', tot_frames=300, add_object_to_scene=True, trial_type='agent', save_frames=False, save_mp4=True)
+    success = c.run(num=5, pass_masks=['_img', '_id'], room='empty', tot_frames=300, add_object_to_scene=True, trial_type='agent', save_frames=True, save_mp4=True)
     print(success)

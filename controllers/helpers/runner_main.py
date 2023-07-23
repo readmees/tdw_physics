@@ -127,6 +127,7 @@ class Runner(Controller):
         paths = [f'{path_main}/{name}/{controller_name}/{trial_type}' for name in ['backgrounds', 'videos']]
         path_backgr, path_videos = paths
         path_frames = f'{path_main}/frames_temp'
+        self.path_frames = path_frames
         paths.append(path_frames)
 
         # Remove previous frames (if possible) 
@@ -201,7 +202,8 @@ class Runner(Controller):
                                                    'save_frames', 'save_mp4', 'transition_start_frames', 'cam_position', 'cam_look_at'))
 
         print(f"Video of trial n will be saved at {path_videos}/{trial_type}/{trial_id}_trial_n.mp4")
-        for trial_num in range(num):
+        trial_num = 0
+        while trial_num != num:
             # Initialize trial and return errors if something is wrong
             trial_commands = self.trial_initialization_commands()
             if not isinstance(trial_commands, list):
@@ -210,34 +212,38 @@ class Runner(Controller):
             #TODO see if this is necessary #NOTE First frame gets removed
             self.communicate(trial_commands)
 
-            # Remove previous frames (if possible), this is needed to make sure that frame 1 is really frame 1
+            # Remove previous frames (if possible), this is needed to make sure that frame 0 is really frame 0
             try:
                 shutil.rmtree(path_frames)
             except FileNotFoundError:
                 pass
             os.makedirs(path_frames, exist_ok=True)
 
-            transition_start_frames = self.run_per_frame_commands(trial_type=trial_type, tot_frames=tot_frames)
+            transition_start_frames, success = self.run_per_frame_commands(trial_type=trial_type, tot_frames=tot_frames)
             
-            # Specify the output video file name
-            output_video = f"{path_videos}/{trial_id}_trial_{trial_num}"
+            # If creation of frames was succesfull and (possible) tests were passed
+            if success:
+                # Specify the output video file name
+                output_video = f"{path_videos}/{trial_id}_trial_{trial_num}"
 
-            # Convert images to videos
-            path_videos_saved, path_frames_saved = images_to_video(path_frames, output_video, framerate, pass_masks, png, save_frames, save_mp4)
-            shutil.rmtree(path_frames)
+                # Convert images to videos
+                path_videos_saved, path_frames_saved = images_to_video(path_frames, output_video, framerate, pass_masks, png, save_frames, save_mp4)
 
-            # Save progress in csv file #NOTE: not tested very well
-            params = (trial_id, trial_num, path_videos_saved, path_frames_saved, num, trial_type, png, pass_masks, framerate, room, 
-            tot_frames, add_object_to_scene, save_frames, save_mp4, transition_start_frames, cam_position, cam_look_at)
-            try:
-                df = df.drop(columns='Unnamed: 0')
-            except KeyError:
-                pass
-            df.loc[len(df)] = params
-            df.to_csv(f'{path_main}/info.csv')
+                # Save progress in csv file #NOTE: not tested very well
+                params = (trial_id, trial_num, path_videos_saved, path_frames_saved, num, trial_type, png, pass_masks, framerate, room, 
+                tot_frames, add_object_to_scene, save_frames, save_mp4, transition_start_frames, cam_position, cam_look_at)
+                try:
+                    df = df.drop(columns='Unnamed: 0')
+                except KeyError:
+                    pass
+                df.loc[len(df)] = params
+                df.to_csv(f'{path_main}/info.csv')
 
-            # Show progress
-            message(f'Progress trials ({trial_num+1}/{num})', 'success', round((trial_num+1)/num*10))
+                # Show progress
+                print(message(f'Progress trials ({trial_num+1}/{num})', 'success', round((trial_num+1)/num*10)))
+                trial_num += 1
+            else:
+                print(message(f'Trial {trial_num} failed, but no need to panick: retrying...', 'error'))
             
         self.communicate({"$type": "terminate"})
 
