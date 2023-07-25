@@ -40,7 +40,7 @@ class Runner(Controller):
         destroy_commands.append({"$type": "send_rigidbodies",
                             "frequency": "never"})
         self.communicate(destroy_commands)
-        return None
+        return None, True
     
     def get_transforms_by_run(self, o_id, commands):
         '''Extension on get_transforms from helpers.helpers;
@@ -99,11 +99,13 @@ class Runner(Controller):
         for mask_type in pass_masks:
             if mask_type not in masks_options:
                 return message(f'{mask_type} not in {masks_options}', 'error')
+        if '_mask' not in pass_masks and self.controller_name == 'occlusion':
+            return message(f"include '_mask' to pass_masks for occlusion trials, this is used to select the right trials")
         if len(set(pass_masks)) != len(pass_masks):
             return message('pass_mask cannot contain any double masks', 'error')
         
         if trial_type not in ['transition', 'agent', 'object']:
-            return message("trial_type should be transition', 'agent' or 'object'", 'error')
+            return message("trial_type should be set to transition', 'agent' or 'object'", 'error')
         
         if tot_frames < 100 and trial_type in ['transition']: #TODO uncomment, 'agent']:
             return message('Use at least 100 frames for a transition or agent based trials', 'error')
@@ -112,7 +114,6 @@ class Runner(Controller):
         
         #TODO check input for all params
         self.framerate = framerate
-
         
         # Clear the list of add-ons.
         self.add_ons.clear()
@@ -169,7 +170,9 @@ class Runner(Controller):
         if isinstance(add_object_to_scene, bool):
             if add_object_to_scene:
                 commands = self.add_object_to_scene(commands)
-            self.slope_added = add_object_to_scene
+            if not add_object_to_scene and self.controller_name == 'rolling_down':
+                return message('Rolling down trials should have slope: set add_object_to_scene to True', 'error')
+
         else:
             return message('Parameter add_object_to_scene should be of type bool', 'error')
         

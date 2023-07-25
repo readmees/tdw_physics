@@ -23,6 +23,7 @@ import os
 class Slope(Runner):
     def __init__(self):
         super().__init__(port=1071) 
+        #NOTE do not change
         self.controller_name = 'rolling_down'
         
         # Uses models_core.json
@@ -196,9 +197,6 @@ class Slope(Runner):
         return position, look_at
 
     def trial_initialization_commands(self):
-        if not self.slope_added:
-            return message('Rolling down trials should have slope', 'error')
-        
         o_id = self.get_unique_id()
 
         # Always store object ids so the main runner knows which to remove

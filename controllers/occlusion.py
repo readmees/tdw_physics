@@ -34,6 +34,11 @@ from tdw.object_data.object_static import ObjectStatic
 from tdw.tdw_utils import TDWUtils
 from copy import deepcopy
 
+# For checking trial
+from PIL import Image
+import os
+from skimage import color, measure
+
 class Occlusion(Runner):
     def __init__(self, port=1071):
         self.controller_name = 'occlusion'
@@ -43,6 +48,8 @@ class Occlusion(Runner):
         super().__init__(port=port)
     
     def run_per_frame_commands(self, trial_type, tot_frames):
+        trial_success = True 
+
         transition_start_frame = None
 
         # Speed of agent
@@ -116,10 +123,22 @@ class Occlusion(Runner):
                                     {"$type": "object_look_at", "other_object_id": self.o_ids[2], "id": self.o_ids[0]},])
                 print(get_distance(resp, self.o_ids[0], self.o_ids[2]))
 
+            if i == 0:
+                # Check if occluder is occluding one side of the screen as well
+                file_names = os.listdir(self.path_frames)
+                file_names.sort()
+                fn = self.path_frames+'/'+[fn for fn in file_names if fn[:5] == 'mask_'][0]
+                print('found file', fn)
+                # NOTE: rgb2gray might also be wrong
+                img = np.asarray(color.rgb2gray(Image.open(fn)))
 
-            # Check if occluder is occluding one side of the screen as well
-            img = Image.open('Sample.png')
-            numpydata = np.asarray(img)
+                # Occluder is occluding one of the sides of the view, or one of the moving objects is already seeable
+                if img[:,0].any() or img[:,-1].any():
+                    resp = self.communicate([])
+                    # Sometimes we get TypeError: 'NoneType' object is not iterable, when trying to get the transforms
+                    print(message(f'Occluder might be covering too much...', 'error'))
+                    trial_success = False
+                    break
 
         # Reset the scene by destroying the objects
         destroy_commands = []
@@ -130,7 +149,7 @@ class Occlusion(Runner):
                             "frequency": "never"})
         self.communicate(destroy_commands)
 
-        return transition_start_frame if transition_start_frame != [] else -1
+        return transition_start_frame if transition_start_frame != [] else -1, trial_success
       
     def add_occ_objects(self):
         '''This method adds two objects to the scene, one moving and one occluder'''
@@ -251,7 +270,6 @@ class Occlusion(Runner):
             # Find suitable magnitude for force
             record_moving = get_record_with_name(self.names[0])
             magnitude = get_magnitude(record_moving)
-            print(magnitude)
 
         # Apply point object towards middle (but behind occluder) #TODO does not account for scale of object
         commands.append({"$type": "object_look_at_position", 
@@ -282,8 +300,4 @@ class Occlusion(Runner):
 if __name__ == "__main__":
     c = Occlusion()
     success = c.run(num=5, pass_masks=['_img', '_mask'], room='empty', tot_frames=200, add_object_to_scene=False, trial_type='transition', png=False)
-    # The commented code only works for other masks then _img
-    # for i in range(30):
-    #     c = Occlusion(port=1000+i)
-    #     success = c.run(num=3, pass_masks=['_img', '_id'], room='empty', tot_frames=150, add_object_to_scene=False, trial_type='object', png=False)
     print(success)

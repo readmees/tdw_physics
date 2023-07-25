@@ -25,3 +25,4 @@ tqdm==4.65.0
 urllib3==1.26.16
 quaternion==3.5.2.post4
 pandas
+scikit-image==0.21.0
