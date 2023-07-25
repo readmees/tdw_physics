@@ -160,7 +160,6 @@ class Collision(Runner):
 
         # To choose random object without putting back
         random.shuffle(self.objects)
-        print(self.objects[:2])
 
         # Set rotation for falling objects
         rotation = {"x": uniform(0, 360) if random.choice([True, False]) else 0, 
@@ -180,6 +179,9 @@ class Collision(Runner):
                     {"$type": "apply_force_magnitude_to_object",
                     "magnitude": magnitude,
                     "id": move_id}])
+            
+        # self.names is put in the csv files, so the developers know which object(s) are chosen
+        self.names = {'object1':self.objects[0], 'object2':self.objects[1]}
 
 
         # Get point non-moving object

@@ -200,7 +200,7 @@ class Runner(Controller):
         try:
             df = pd.read_csv(f'{path_main}/info.csv', index_col=False)
         except FileNotFoundError:
-            df = pd.DataFrame(index=None, columns=('trial_id', 'trial_num', 'path_videos', 'path_frames', 'num', 'trial_type', 
+            df = pd.DataFrame(index=None, columns=('trial_id', 'trial_num', 'path_videos', 'path_frames', 'num', 'trial_type', 'objects_name',
                                                    'png', 'pass_masks', 'framerate', 'room', 'tot_frames', 'add_object_to_scene', 
                                                    'save_frames', 'save_mp4', 'transition_start_frames', 'cam_position', 'cam_look_at'))
 
@@ -233,7 +233,7 @@ class Runner(Controller):
                 path_videos_saved, path_frames_saved = images_to_video(path_frames, output_video, framerate, pass_masks, png, save_frames, save_mp4)
 
                 # Save progress in csv file #NOTE: not tested very well
-                params = (trial_id, trial_num, path_videos_saved, path_frames_saved, num, trial_type, png, pass_masks, framerate, room, 
+                params = (trial_id, trial_num, path_videos_saved, path_frames_saved, num, trial_type, self.names, png, pass_masks, framerate, room, 
                 tot_frames, add_object_to_scene, save_frames, save_mp4, transition_start_frames, cam_position, cam_look_at)
                 try:
                     df = df.drop(columns='Unnamed: 0')

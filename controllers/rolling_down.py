@@ -207,6 +207,9 @@ class Slope(Runner):
         object_choice = random.choice(self.objects)
         self.object_choice = object_choice
 
+        # self.names is put in the csv files, so the developers know which object(s) are chosen
+        self.names = {'object':object_choice}
+
         # Flip object if needed to roll, e.g. cola can
         rotation_x = 0 if object_choice not in ROLLING_FLIPPED else random.choice([90, -90])
         

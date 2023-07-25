@@ -244,7 +244,7 @@ class Containment(Runner):
                                                               "y": uniform(-10, 10),
                                                               "z": uniform(-10, 10)}))
         
-        # Add a random agent object
+        # Add the random moving object (can be agent, in that case also add target)
         self.o_record = records[0]
         o_id = self.get_unique_id()
         self.o_ids = [container_id, o_id] if self.trial_type != 'agent' else [container_id, o_id, self.get_unique_id()]
@@ -257,6 +257,10 @@ class Containment(Runner):
                                                     rotation={"x": uniform(-45, 45),
                                                               "y": uniform(-45, 45),
                                                               "z": uniform(-45, 45)}))
+        
+        # self.names is put in the csv files, so the developers know which object(s) are chosen
+        self.names = {'object':records[0].name, 'container':records[1].name}
+
         if self.trial_type == 'agent':
             commands = self.add_target(commands)
             

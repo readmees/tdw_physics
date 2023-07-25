@@ -101,6 +101,9 @@ class UpWarmer(Runner):
                                                     position=position,
                                                     rotation=rotation))
         
+        # self.names is put in the csv files, so the developers know which object(s) are chosen
+        self.names = {'object':self.objects[0]}
+
         # Remove selected object, so next object won't be the same
         self.objects.remove(self.objects[0])
 

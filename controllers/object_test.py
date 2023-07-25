@@ -146,7 +146,6 @@ class Object_tester(Controller):
             while not moved:
                 try:
                     first_frame = os.listdir(f'{path_frames}')[0]
-                    print('first', first_frame)
                     if '.' in self.names[self.index]:
                         return message('name cannot contain a dot for later evalutation',  'error')
                     shutil.move(f'{path_frames}/{first_frame}', f'{path_backgr}/{self.index}.{self.names[self.index]}{ext}') 

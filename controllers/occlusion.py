@@ -59,7 +59,7 @@ class Occlusion(Runner):
         # Speed of agent
         speed = .04
 
-        bounds = np.max(TDWUtils.get_bounds_extents(get_record_with_name(self.names[0]).bounds))/2 
+        bounds = np.max(TDWUtils.get_bounds_extents(get_record_with_name(self.all_names[0]).bounds))/2 
         bounds += np.max(TDWUtils.get_bounds_extents(get_record_with_name('sphere', json='models_flex.json').bounds))*.2/2 
 
         agent_success = False
@@ -162,7 +162,7 @@ class Occlusion(Runner):
         # Random occluded and occluder object, where occluded object is smaller
         records, bounds = get_two_random_records(smaller_list=OCCLUDED, larger_list=OCCLUDERS, axis=[1,2])
 
-        self.names = [record.name for record in records]
+        self.all_names = [record.name for record in records]
         for i, record in enumerate(records):
 
             # Moving object is record[0] & self.o_ids[0] and occluder is record[1] & self.o_ids[1]
@@ -183,6 +183,9 @@ class Occlusion(Runner):
                                                         default_physics_values=False,
                                                         mass = 1 # TODO, use real scale
                                                         ))
+        
+        # self.names is put in the csv files, so the developers know which object(s) are chosen
+        self.names = {'object':self.all_names[0], 'collider':self.all_names[1]}
         return commands, bounds
     
     def set_camera(self):
@@ -205,7 +208,7 @@ class Occlusion(Runner):
                     if transforms.get_id(j) == o_id:
                         # Return position of object with o_id as object id
                         return transforms.get_position(j)
-        return message(f"{self.names[0]} does not have positions data, with occluder {self.names[1]}", 'error')
+        return message(f"{self.all_names[0]} does not have positions data, with occluder {self.all_names[1]}", 'error')
     
     def add_target(self, commands, bounds):
         # self.o_ids = [agent_id, occ_id, target_id]
@@ -252,6 +255,8 @@ class Occlusion(Runner):
         self.o_ids = [self.get_unique_id() for _ in range(num_objects)]
         moving_o_id = self.o_ids[0]
         commands, bounds = self.add_occ_objects()
+
+        # Add agent if needed
         if self.trial_type == 'agent':
             commands = self.add_target(commands, bounds[0])
 
@@ -272,7 +277,7 @@ class Occlusion(Runner):
             magnitude = random.uniform(80, 100)
         else:
             # Find suitable magnitude for force
-            record_moving = get_record_with_name(self.names[0])
+            record_moving = get_record_with_name(self.all_names[0])
             magnitude = get_magnitude(record_moving)
 
         # Apply point object towards middle (but behind occluder) #TODO does not account for scale of object
@@ -297,7 +302,6 @@ class Occlusion(Runner):
                       {"$type": "send_static_rigidbodies",
                        "frequency": "once"}])
         
-        print(self.names)
         return commands
     
 
