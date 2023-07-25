@@ -36,10 +36,10 @@ conda activate tdw_trials
 5. Run controller in controller folder
 ```
 cd controllers
- open TDW.app;python <controller_name>.py
+python <controller_name>.py
 ```
 5. Might have to run again:
- ```open TDW.app;python occlusion.py```
+ ```python <controller_name>.py```
 ## Copyright
 A lot of this code is based on, or an edited version of the code in the [tdw_physics](https://github.com/alters-mit/tdw_physics) repository, Copyright (c) 2021 Seth Alter
 However, I put in many hours in to shape, so plese also consider, Copyright (c) 2023 Mees Meester

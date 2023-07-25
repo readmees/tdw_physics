@@ -7,6 +7,10 @@ The height and distance of the camera is random for every trial
 The camera is always the same perpendicular x distance from the z axis as the same from the moving object
 The occluder is always on the y and z are always 0 for the occluder
 NOTE: stopping is not the same as in rolling down trial and could be perfected
+It gets checked if the occluder (or any other object) is covering at least one pixel
+ at one side of the screen at the start of the trial, the reason is that an object should be able to be seen 
+ disappeard at one side and appearing at the other side, if the other side is outside of the view, this doesn't 
+ make sense.
 
 Possible improvements:
 Use real physics (e.g. mass)
