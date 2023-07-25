@@ -21,7 +21,6 @@ from helpers.helpers import get_magnitude, get_record_with_name, get_distance
 from copy import deepcopy
 from tdw.tdw_utils import TDWUtils
 from random import uniform
-
 import numpy as np
 
 class Collision(Runner):
@@ -30,7 +29,7 @@ class Collision(Runner):
         self.controller_name = 'collision'
 
         # Concatenate the lists and remove duplicates 
-        # NOTE: Exclude OCCLUDERS & OCCLUDERS_SEE_THROUGH, because they need a lot of force
+        # NOTE: Exclude OCCLUDERS & OCCLUDERS_SEE_THROUGH, because they then to need a lot of force
         self.objects = list(set(CONTAINERS + OCCLUDED + ROLLING_FLIPPED))
       
         self.camera_pos = {"x": random.uniform(1.5, 2), "y": 0.5, "z": random.uniform(-1, 1)}
@@ -42,15 +41,20 @@ class Collision(Runner):
         # Check if transition is done
         transition_compl = False  
 
-        # Settings for agent
-        speed = .04
-        bounds = np.max(TDWUtils.get_bounds_extents(get_record_with_name(self.objects[0]).bounds))/2 
-        bounds += np.max(TDWUtils.get_bounds_extents(get_record_with_name('sphere', json='models_flex.json').bounds))*.2/2 
-
-        coll_pos, moving_pos = self.positions
+        coll_pos, moving_pos = self.positions[:2]
         speed = [random.choice([-.1, 0, .1]), random.choice([-.1, 0, .1])]
+
+        # Settings for agent
+        if trial_type == 'agent':
+            speed = .04
+            bounds = np.max(TDWUtils.get_bounds_extents(get_record_with_name(self.objects[1]).bounds))/2 
+            bounds += np.max(TDWUtils.get_bounds_extents(get_record_with_name('sphere', json='models_flex.json').bounds))*.2/2 
+            agent_success = False
+
         for i in range(tot_frames):
-            # Check if this is object, agent or transition trial
+            
+
+            # Check if this is object based or transition trial
             if trial_type == 'transition':
                 transition_frames = []
                 # Start transition when the objects are close #NOTE size is not considered
@@ -75,20 +79,19 @@ class Collision(Runner):
                 moving_pos = {axis:value for axis, value in zip(['x', 'y', 'z'], self.get_ob_pos(self.o_ids[1], resp))}
             
             if trial_type == 'agent':
-                resp = self.communicate([{"$type": "apply_force_magnitude_to_object",
-                        "magnitude": 10,
-                        "id": self.o_ids[1]}])
+                if i == 0:
+                    resp = self.communicate([{"$type": "object_look_at", "other_object_id": self.o_ids[-1], "id": self.o_ids[1]},
+                                             {"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[1], "absolute": False}])
+                elif (get_distance(resp, self.o_ids[0], self.o_ids[-1]) - bounds) <.05 or agent_success:
+                    print('success')
+                    resp = self.communicate([])
+                    agent_success = True
+                else:
+                   resp = self.communicate([{"$type": "object_look_at", "other_object_id": self.o_ids[-1], "id": self.o_ids[1]},
+                                             {"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[1], "absolute": False}])
+                print(get_distance(resp, self.o_ids[-1], self.o_ids[1]))
+                moving_pos = {axis:value for axis, value in zip(['x', 'y', 'z'], self.get_ob_pos(self.o_ids[1], resp))}
 
-                # if i == 0:
-                #     resp = self.communicate([{"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[1], "absolute": False},
-                #                     {"$type": "object_look_at", "other_object_id": self.o_ids[0], "id": self.o_ids[1]},])
-                # elif (get_distance(resp, self.o_ids[0], self.o_ids[1])- bounds) <.05 or agent_success:
-                #     print('success')
-                #     resp = self.communicate([])
-                #     agent_success = True
-                # else:
-                #     resp = self.communicate([{"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[1], "absolute": False},
-                #                     {"$type": "object_look_at", "other_object_id": self.o_ids[0], "id": self.o_ids[1]},])
                  
             if trial_type == 'object':
                 self.communicate([])
@@ -102,7 +105,7 @@ class Collision(Runner):
                             "frequency": "never"})
         self.communicate(destroy_commands)
         return transition_frames if transition_frames != [] else -1, True
-
+    
     def set_fall_postions(self):
         '''This method implements objects falling on top of each other, 
         by placing one above the other'''
@@ -127,8 +130,7 @@ class Collision(Runner):
         return [coll_pos, moving_pos]
 
     def add_objects(self, commands, rotation):
-        
-        for i in range(self.num_objects):
+        for i in range(self.num_objects if self.trial_type != 'agent' else self.num_objects - 1):
             commands.extend(self.get_add_physics_object(model_name=self.objects[i],
                                                         library='models_core.json',
                                                         object_id=self.o_ids[i],
@@ -148,9 +150,14 @@ class Collision(Runner):
                     if transforms.get_id(j) == o_id:
                         # Return position of object with o_id as object id
                         return transforms.get_position(j)
-
+    
     def add_target(self, commands):
-        target_id = self.o_ids[0]
+        target_id = self.o_ids[-1]
+        
+        #NOTE occluding object is perfectly in the middle?
+        agent_pos = deepcopy(self.positions[1])
+        agent_pos['z'] = -agent_pos['z']
+        agent_pos['x'] = -agent_pos['x']
 
         # Set scale
         scale = .2
@@ -159,7 +166,7 @@ class Collision(Runner):
         commands.extend(self.get_add_physics_object(model_name='sphere',
                                                     library='models_flex.json',
                                                     object_id=target_id,
-                                                    position=self.positions[0],
+                                                    position=agent_pos,
                                                     scale_factor={"x": scale, "y": scale, "z": scale},
                                                     ))
         # Make target red
@@ -178,51 +185,49 @@ class Collision(Runner):
                            avatar_id='frames_temp')
         self.add_ons.append(self.camera)
         return position, look_at
-    
+        
     def trial_initialization_commands(self):
+        # Could be extended to multiple objects one day
+        self.num_objects = 2 if self.trial_type != 'agent' else 3
+
+        # Always store object ids so the main runner knows which to remove
+        self.o_ids = [self.get_unique_id() for _ in range(self.num_objects)] 
+        coll_id, move_id = self.o_ids[:2]
+
+        # Choose between falling or force collisions
+        coll_type = random.choice(['fall', 'force']) if self.trial_type != 'agent' else 'agent'
+
+        # Get positions based on collision type
+        self.positions = self.set_force_positions() if coll_type != 'fall' else self.set_fall_postions()
+
         # To choose random object without putting back
         random.shuffle(self.objects)
+
+        # Set rotation for falling objects
+        rotation = {"x": uniform(0, 360) if random.choice([True, False]) else 0, 
+                    "y": uniform(0, 360) if random.choice([True, False]) else 0, 
+                    "z": uniform(0, 360) if random.choice([True, False]) else 0} if coll_type == 'fall' else {"x": 0, "y": 0, "z": 0}
         
-        # Agent is very different so we use two functions
-        if self.trial_type == 'agent':
-            commands = self.agent_trial_initialization_commands()
-        else:
-            # Could be extended to multiple objects one day
-            self.num_objects = 2
+        commands = self.add_objects(commands=[], rotation=rotation)
+        if coll_type == 'force':
+            # Get suitable magnitude
+            magnitude = get_magnitude(get_record_with_name(self.objects[1]))
+            magnitude = magnitude * 2 if self.objects[1] in EXTRA_FORCE else magnitude * .8
 
-            # Always store object ids so the main runner knows which to remove
-            self.o_ids = [self.get_unique_id() for _ in range(self.num_objects)]
-            coll_id, move_id = self.o_ids
-
-            # Choose between falling or force collisions
-            coll_type = random.choice(['fall', 'force'])
-
-            # Get positions based on collision type
-            self.positions = self.set_fall_postions() if coll_type == 'fall' else self.set_force_positions()
-
+            print(self.objects[1], magnitude)
+            commands.extend([{"$type": "object_look_at",
+                    "other_object_id": coll_id,
+                    "id": move_id},
+                    {"$type": "apply_force_magnitude_to_object",
+                    "magnitude": magnitude,
+                    "id": move_id}])
             
+        if coll_type == 'agent':
+             #NOTE occluding object is perfectly in the middle?
+            commands = self.add_target(commands)
 
-            # Set rotation for falling objects
-            rotation = {"x": uniform(0, 360) if random.choice([True, False]) else 0, 
-                        "y": uniform(0, 360) if random.choice([True, False]) else 0, 
-                        "z": uniform(0, 360) if random.choice([True, False]) else 0} if coll_type == 'fall' else {"x": 0, "y": 0, "z": 0}
-            
-            commands = self.add_objects(commands=[], rotation=rotation)
-            if coll_type == 'force':
-                # Get suitable magnitude
-                magnitude = get_magnitude(get_record_with_name(self.objects[1]))
-                magnitude = magnitude * 2 if self.objects[1] in EXTRA_FORCE else magnitude * .8
-
-                print(self.objects[1], magnitude)
-                commands.extend([{"$type": "object_look_at",
-                        "other_object_id": coll_id,
-                        "id": move_id},
-                        {"$type": "apply_force_magnitude_to_object",
-                        "magnitude": magnitude,
-                        "id": move_id}])
-                
-            # self.names is put in the csv files, so the developers know which object(s) are chosen
-            self.names = {'object1':self.objects[0], 'object2':self.objects[1]}
+        # self.names is put in the csv files, so the developers know which object(s) are chosen
+        self.names = {'object1':self.objects[0], 'object2':self.objects[1]} #TODO update for agent
 
 
         # Get point non-moving object
@@ -237,15 +242,15 @@ class Collision(Runner):
 
         # Send transforms in order to keep track of locations
         commands.extend([{"$type": "send_transforms",
-                            "frequency": "always"},
-                {"$type": "send_rigidbodies",
-                "frequency": "always"},
-                {"$type": "send_static_rigidbodies",
-                "frequency": "once"}])
+                                  "frequency": "always"},
+                        {"$type": "send_rigidbodies",
+                       "frequency": "always"},
+                      {"$type": "send_static_rigidbodies",
+                       "frequency": "once"}])
 
         return commands
     
 if __name__ == "__main__":
     c = Collision()
-    success = c.run(num=2, pass_masks=['_img'], room='empty', add_object_to_scene=False, tot_frames=150, png=False, trial_type='agent', save_mp4=True)
+    success = c.run(num=5, pass_masks=['_img'], room='empty', add_object_to_scene=False, tot_frames=150, png=False, trial_type='agent', save_mp4=True)
     print(success)
