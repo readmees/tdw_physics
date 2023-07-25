@@ -165,7 +165,7 @@ class Containment(Runner):
         # Set scale
         scale = .2
 
-        # Add object1
+        # Add target
         commands.extend(self.get_add_physics_object(model_name='sphere',
                                                     library='models_flex.json',
                                                     object_id=target_id,

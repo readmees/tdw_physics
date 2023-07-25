@@ -54,19 +54,15 @@ class Occlusion(Runner):
     def run_per_frame_commands(self, trial_type, tot_frames):
         trial_success = True 
 
-        transition_start_frame = None
-
-        # Speed of agent
+        # Settings for agent
         speed = .04
-
         bounds = np.max(TDWUtils.get_bounds_extents(get_record_with_name(self.all_names[0]).bounds))/2 
         bounds += np.max(TDWUtils.get_bounds_extents(get_record_with_name('sphere', json='models_flex.json').bounds))*.2/2 
-
         agent_success = False
-        first_resp = False
 
         # Check if transition is done
         transition_compl = False             
+        transition_start_frame = None
         
         # Calculate z distance between occluder and camera
         stop_moving = np.abs(self.o_occl_loc_z - self.camera_pos['z'])
@@ -114,17 +110,16 @@ class Occlusion(Runner):
                 self.communicate([])
 
             if trial_type == 'agent':
-                if not first_resp:
-                    resp = self.communicate([{"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[0], "absolute": False},
-                                    {"$type": "object_look_at", "other_object_id": self.o_ids[2], "id": self.o_ids[0]},])
-                    first_resp = True
-                elif (get_distance(resp, self.o_ids[0], self.o_ids[2])- bounds) <.05  or agent_success:
+                if i == 0:
+                    resp = self.communicate([{"$type": "object_look_at", "other_object_id": self.o_ids[2], "id": self.o_ids[0]},
+                                             {"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[0], "absolute": False}])
+                elif (get_distance(resp, self.o_ids[0], self.o_ids[2])- bounds) <.05 or agent_success:
                     print('success')
                     resp = self.communicate([])
                     agent_success = True
                 else:
-                    resp = self.communicate([{"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[0], "absolute": False},
-                                    {"$type": "object_look_at", "other_object_id": self.o_ids[2], "id": self.o_ids[0]},])
+                   resp = self.communicate([{"$type": "object_look_at", "other_object_id": self.o_ids[2], "id": self.o_ids[0]},
+                                             {"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[0], "absolute": False}])
                 print(get_distance(resp, self.o_ids[0], self.o_ids[2]))
 
             if i == 0:
@@ -132,7 +127,6 @@ class Occlusion(Runner):
                 file_names = os.listdir(self.path_frames)
                 file_names.sort()
                 fn = self.path_frames+'/'+[fn for fn in file_names if fn[:5] == 'mask_'][0]
-                print('found file', fn)
                 # NOTE: rgb2gray might also be wrong
                 img = np.asarray(color.rgb2gray(Image.open(fn)))
 
@@ -224,7 +218,7 @@ class Occlusion(Runner):
         # Set scale
         scale = .2
 
-        # Add object1
+        # Add target
         commands.extend(self.get_add_physics_object(model_name='sphere',
                                                     library='models_flex.json',
                                                     object_id=target_id,
@@ -307,5 +301,5 @@ class Occlusion(Runner):
 
 if __name__ == "__main__":
     c = Occlusion()
-    success = c.run(num=5, pass_masks=['_img', '_mask'], room='empty', tot_frames=200, add_object_to_scene=False, trial_type='transition', png=False)
+    success = c.run(num=5, pass_masks=['_img', '_mask'], room='empty', tot_frames=200, add_object_to_scene=False, trial_type='transition', png=False, save_mp4=True)
     print(success)
