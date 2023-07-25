@@ -17,7 +17,7 @@ from tdw.output_data import Transforms, OutputData
 import random 
 from helpers.objects import *
 from tdw.add_ons.third_person_camera import ThirdPersonCamera
-from helpers.helpers import get_magnitude, get_record_with_name, get_distance
+from helpers.helpers import get_magnitude, get_record_with_name, get_distance, get_transforms
 from copy import deepcopy
 from tdw.tdw_utils import TDWUtils
 from random import uniform
@@ -46,10 +46,17 @@ class Collision(Runner):
 
         # Settings for agent
         if trial_type == 'agent':
-            speed = .04
-            bounds = np.max(TDWUtils.get_bounds_extents(get_record_with_name(self.objects[1]).bounds))/2 
-            bounds += np.max(TDWUtils.get_bounds_extents(get_record_with_name('sphere', json='models_flex.json').bounds))*.2/2 
+            speed = .06
+            
+            #NOTE might be better to exclude height or take rotation into account
+            bounds_obstacle = np.max(TDWUtils.get_bounds_extents(get_record_with_name(self.objects[0]).bounds))/2 
+            height_obstacle = TDWUtils.get_bounds_extents(get_record_with_name(self.objects[0]).bounds)[1]
+            bounds_agent = np.max(TDWUtils.get_bounds_extents(get_record_with_name(self.objects[1]).bounds))/2 
+            bounds_target = np.max(TDWUtils.get_bounds_extents(get_record_with_name('sphere', json='models_flex.json').bounds))*.2/2 
+            bounds = bounds_agent + bounds_target
             agent_success = False
+
+            last_height = 0
 
         for i in range(tot_frames):
             
@@ -79,18 +86,36 @@ class Collision(Runner):
                 moving_pos = {axis:value for axis, value in zip(['x', 'y', 'z'], self.get_ob_pos(self.o_ids[1], resp))}
             
             if trial_type == 'agent':
+                commands = []
                 if i == 0:
-                    resp = self.communicate([{"$type": "object_look_at", "other_object_id": self.o_ids[-1], "id": self.o_ids[1]},
+                    commands.extend([{"$type": "object_look_at", "other_object_id": self.o_ids[-1], "id": self.o_ids[1]},
                                              {"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[1], "absolute": False}])
-                elif (get_distance(resp, self.o_ids[0], self.o_ids[-1]) - bounds) <.05 or agent_success:
-                    print('success')
-                    resp = self.communicate([])
+                elif (get_distance(resp, self.o_ids[1], self.o_ids[-1]) - bounds) <.05 or agent_success:
+                    print('Succes')
+                    # Target reached, keep moving in same direction
+                    commands.extend([{"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[1], "absolute": False}])
                     agent_success = True
                 else:
-                   resp = self.communicate([{"$type": "object_look_at", "other_object_id": self.o_ids[-1], "id": self.o_ids[1]},
+                    commands.extend([{"$type": "object_look_at", "other_object_id": self.o_ids[-1], "id": self.o_ids[1]},
                                              {"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[1], "absolute": False}])
-                print(get_distance(resp, self.o_ids[-1], self.o_ids[1]))
-                moving_pos = {axis:value for axis, value in zip(['x', 'y', 'z'], self.get_ob_pos(self.o_ids[1], resp))}
+                    
+                    #NOTE: the following formula might not make sense, aims to calculate the right 'fly' height
+                    if (get_distance(resp, self.o_ids[0], self.o_ids[1]) - (bounds_obstacle+bounds_agent)) < (height_obstacle/speed+speed*3):
+                        height = get_transforms(resp, self.o_ids[1])[1][1]
+
+                        # Go up if flight is not already descending #NOTE: might be shocky
+                        if height > last_height:
+                            commands.append({"$type": "teleport_object_by", "position": {"x": 0, "y": speed*2, "z": 0}, "id": self.o_ids[1], "absolute": True})
+                            print('fly succes')
+                            last_height = height
+                        else:
+                            print('fly avoid')
+                            # Will only fly up once 
+                            last_height = np.inf 
+
+                resp = self.communicate(commands)
+                
+                
 
                  
             if trial_type == 'object':
@@ -120,8 +145,8 @@ class Collision(Runner):
     
     def set_force_positions(self):
         # Add postions for moving object
-        x = random.choice([random.uniform(-5, -3), random.uniform(3, 5)])
-        z = random.choice([random.uniform(-5, -3), random.uniform(3, 5)])
+        x = random.choice([random.uniform(-2.2, -.8), random.uniform(.8, 2.2)])
+        z = random.choice([random.uniform(-2.2, -.8), random.uniform(.8, 2.2)])
         moving_pos = {"x": x, "y": 0, "z": z}
         
         # Add position of the object that will be in the way of the moving object
@@ -179,7 +204,7 @@ class Collision(Runner):
         ''' The avatar_id of the camera should be 'frames_temp'
         '''
         # Add camera
-        position, look_at = {"x": -1, "y": 1.5, "z": -2}, {"x": 0, "y": 0, "z": 0}
+        position, look_at = {"x": -1, "y": 1.5, "z": -3}, {"x": 0, "y": 0, "z": 0}
         self.camera = ThirdPersonCamera(position=position,
                            look_at=look_at,
                            avatar_id='frames_temp')
