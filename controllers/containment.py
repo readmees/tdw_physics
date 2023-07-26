@@ -19,7 +19,7 @@ import random
 
 from helpers.runner_main import Runner
 from helpers.objects import CONTAINERS, CONTAINED
-from helpers.helpers import get_two_random_records, message, get_transforms, get_magnitude, get_record_with_name, get_distance
+from helpers.helpers import get_two_random_records, get_transforms, message, get_magnitude, get_record_with_name, get_distance, create_arg_parser
 
 import numpy as np
 
@@ -37,15 +37,18 @@ class Containment(Runner):
         super().__init__(port=port)
     
     def run_per_frame_commands(self, trial_type, tot_frames):
+        transition_start_frame = None
+
         # Agent speed
         speed, up_speed = .06, .06
-        first_resp = False
         agent_success = False
 
         bounds = np.max(TDWUtils.get_bounds_extents(self.o_record .bounds))/2 
         bounds += np.max(TDWUtils.get_bounds_extents(get_record_with_name('sphere', json='models_flex.json').bounds))*.2/2 
 
         if trial_type == 'transition':
+            transition_start_frame = []
+
             rotations, positions = [], []
 
             # Define the amount of patience the program has before a transition is enabled
@@ -83,6 +86,7 @@ class Containment(Runner):
                         activate_transition = (o_relative_position<max_distance).all()
 
                         if activate_transition:
+                            transition_start_frame.append(i)
                             print('transition!!!')
                             # commands.append({"$type": "object_look_at_position",
                             #                 "position":  {"x": random.uniform(-10, 10), 
@@ -112,11 +116,15 @@ class Containment(Runner):
 
                     # Make room for the next frame
                     rotations, positions = rotations[1:], positions[1:]
-        for i in range(tot_frames):
-            if trial_type == 'object':
-                self.communicate([])
+        
+        # Let the trial settle for a couple of frames
+        settle_frames = random.randint(20, 40)
 
-            if trial_type == 'agent':
+        for i in range(tot_frames):
+            if trial_type == 'object' or i < settle_frames:
+                resp = self.communicate([])
+
+            elif trial_type == 'agent':
                 up_speed -= .005 if up_speed > 0 else 0
                 commands = [{"$type": "teleport_object_by", 
                                               "position": {"x": 0, "y": up_speed, "z": 0}, 
@@ -129,10 +137,8 @@ class Containment(Runner):
                                               {"$type": "object_look_at", 
                                                "other_object_id": self.o_ids[2], 
                                                "id": self.o_ids[1]},]
-                if not first_resp:
-                    resp = self.communicate(commands)
-                    first_resp = True
-                elif (get_distance(resp, self.o_ids[1], self.o_ids[2])- bounds) <.06  or agent_success:
+                
+                if (get_distance(resp, self.o_ids[1], self.o_ids[2])- bounds) <.06  or agent_success:
                     resp = self.communicate([])
                     agent_success = True
                 else:
@@ -148,6 +154,8 @@ class Containment(Runner):
         destroy_commands.append({"$type": "send_rigidbodies",
                             "frequency": "never"})
         self.communicate(destroy_commands)
+        return transition_start_frame if transition_start_frame != [] else -1, True
+
 
     def add_target(self, commands):
         # self.o_ids = [agent_id, occ_id, target_id]
@@ -273,5 +281,11 @@ class Containment(Runner):
 
 if __name__ == "__main__":
     c = Containment()
-    success = c.run(num=5, pass_masks=['_img', '_mask'] , room='empty', tot_frames=200, add_object_to_scene=True, trial_type='agent')
+
+    # Retrieve the right arguments
+    args = create_arg_parser()
+    print(message('tot_frames is set to 200 for this trial, and add_object_to_scene is True', 'warning'))
+    success = c.run(num=args.num, pass_masks=args.pass_masks, room=args.room, tot_frames=200,
+                    add_object_to_scene=True, trial_type=args.trial_type,
+                    png=args.png, save_frames=args.save_frames, save_mp4=args.save_mp4)
     print(success)

@@ -1,4 +1,4 @@
-# STATUS: V1 - Experimential
+# STATUS: V2 - All the trial types are implemented, can be improved
 '''
 Readme:
 
@@ -17,7 +17,7 @@ from tdw.output_data import Transforms, OutputData
 import random 
 from helpers.objects import *
 from tdw.add_ons.third_person_camera import ThirdPersonCamera
-from helpers.helpers import get_magnitude, get_record_with_name, get_distance, get_transforms
+from helpers.helpers import get_magnitude, get_record_with_name, get_distance, get_transforms, create_arg_parser, message
 from copy import deepcopy
 from tdw.tdw_utils import TDWUtils
 from random import uniform
@@ -58,6 +58,9 @@ class Collision(Runner):
 
             last_height = 0
 
+            force = get_magnitude(get_record_with_name(self.objects[1]))
+            
+
         for i in range(tot_frames):
             
 
@@ -90,11 +93,16 @@ class Collision(Runner):
                 if i == 0:
                     commands.extend([{"$type": "object_look_at", "other_object_id": self.o_ids[-1], "id": self.o_ids[1]},
                                              {"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[1], "absolute": False}])
-                elif (get_distance(resp, self.o_ids[1], self.o_ids[-1]) - bounds) <.05 or agent_success:
+                elif (get_distance(resp, self.o_ids[1], self.o_ids[-1]) - bounds) <.4 or agent_success:
                     print('Succes')
-                    # Target reached, keep moving in same direction
-                    commands.extend([{"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[1], "absolute": False}])
-                    agent_success = True
+                    if not agent_success:
+                        # Target almost reached, apply force in its direction to enable collision
+                        commands.extend([{"$type": "object_look_at", "other_object_id": self.o_ids[-1], "id": self.o_ids[1]},
+                                            {"$type": "apply_force_magnitude_to_object",
+                                            "magnitude": force,
+                                            "id": self.o_ids[1]}])
+                        agent_success = True
+                    
                 else:
                     commands.extend([{"$type": "object_look_at", "other_object_id": self.o_ids[-1], "id": self.o_ids[1]},
                                              {"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[1], "absolute": False}])
@@ -277,5 +285,11 @@ class Collision(Runner):
     
 if __name__ == "__main__":
     c = Collision()
-    success = c.run(num=5, pass_masks=['_img'], room='empty', add_object_to_scene=False, tot_frames=150, png=False, trial_type='agent', save_mp4=True)
+
+    # Retrieve the right arguments
+    args = create_arg_parser()
+    print(message('add_object_to_scene is set to False and tot_frames to 200', 'warning'))
+    success = c.run(num=args.num, pass_masks=args.pass_masks, room=args.room, tot_frames=150,
+                    add_object_to_scene=False, trial_type=args.trial_type,
+                    png=args.png, save_frames=args.save_frames, save_mp4=args.save_mp4)
     print(success)

@@ -15,7 +15,7 @@ import random
 
 from helpers.runner_main import Runner
 from helpers.objects import ROLLING_FLIPPED
-from helpers.helpers import get_magnitude, message, get_record_with_name, get_distance, get_transforms
+from helpers.helpers import get_magnitude, message, get_record_with_name, get_distance, create_arg_parser
 
 import shutil
 import os
@@ -106,8 +106,8 @@ class Slope(Runner):
         # Ball doesn't have to roll too much
         position['y'] = random.uniform(1.4,1.5)
 
-        # Drop target on left of slope max, so agent on the right will have to go uphil
-        position['x'] =  random.uniform(-.35,-.3)
+        # Drop target slightly on right of slope max, so agent on the right will have to go uphil
+        position['x'] =  random.uniform(-.3,-.26)
         
 
 
@@ -244,5 +244,11 @@ class Slope(Runner):
     
 if __name__ == "__main__":
     c = Slope()
-    success = c.run(num=5, pass_masks=['_img', '_id'], room='empty', tot_frames=300, add_object_to_scene=True, trial_type='agent', save_frames=True, save_mp4=True)
+
+    # Retrieve the right arguments
+    args = create_arg_parser()
+    print(message('add_object_to_scene is set to True', 'warning'))
+    success = c.run(num=args.num, pass_masks=args.pass_masks, room=args.room, tot_frames=args.tot_frames,
+                    add_object_to_scene=True, trial_type=args.trial_type,
+                    png=args.png, save_frames=args.save_frames, save_mp4=args.save_mp4)
     print(success)

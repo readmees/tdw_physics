@@ -20,6 +20,8 @@ from tdw.output_data import StaticRigidbodies
 import shutil
 import os
 
+import argparse
+
 class ObjectInfo:
     """
     Based on ObjectPosition from &tdw_physics
@@ -242,3 +244,20 @@ def get_distance(resp, o_id1, o_id2):
     point1 = {axis:value for axis, value in zip(['x', 'y', 'z'], get_transforms(resp, o_id1)[1])}
     point2 = {axis:value for axis, value in zip(['x', 'y', 'z'], get_transforms(resp, o_id2)[1])}
     return TDWUtils.get_distance(point1, point2) 
+
+def create_arg_parser():
+    parser = argparse.ArgumentParser(description="Please select the parameters to create trials")
+
+    parser.add_argument("-n", "--num", type=int, default=1, help="Number of trials")
+    parser.add_argument("-t", "--trial_type", default='object', choices=["agent", "transition", "object"], help="Type of trial (agent/transition/object)")
+    parser.add_argument("--png", default=True, action="store_true", help="Use lossless PNG images instead of JPG")
+    parser.add_argument("--pass_masks", type=list, default=['_img', '_mask'], help="Segmentation data and more, see https://github.com/threedworld-mit/tdw/blob/master/Documentation/api/command_api.md#set_pass_masks")
+    parser.add_argument("--framerate", type=int, default=30, help="Target framerate and fps of video")
+    parser.add_argument("--room", default="empty", help="Scene room type, can be any of the specified scene names, 'random_unsafe' pick a random room which is not safe, because not all rooms are tested")
+    parser.add_argument("--tot_frames", type=int, default=200, help="Total of frames per trial, can be stopped before in some cases")
+    parser.add_argument("--add_object_to_scene", default=False, action="store_true", help="Add objects to the scene and background")
+    parser.add_argument("--save_frames", default=True, action="store_true", help="Save the frames")
+    parser.add_argument("--save_mp4", default=False, action="store_true", help="Save frames as MP4")
+
+    args = parser.parse_args()
+    return args

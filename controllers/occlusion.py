@@ -27,7 +27,7 @@ from typing import Dict
 import random
 from helpers.runner_main import Runner
 from helpers.objects import *
-from helpers.helpers import message, get_two_random_records, get_magnitude, get_record_with_name, get_distance
+from helpers.helpers import message, get_two_random_records, get_magnitude, get_record_with_name, get_distance, create_arg_parser
 
 # To keep track of where the moving objects is
 from tdw.output_data import Transforms, OutputData
@@ -301,5 +301,14 @@ class Occlusion(Runner):
 
 if __name__ == "__main__":
     c = Occlusion()
-    success = c.run(num=5, pass_masks=['_img', '_mask'], room='empty', tot_frames=200, add_object_to_scene=False, trial_type='transition', png=False, save_mp4=True)
+
+    # Retrieve the right arguments
+    args = create_arg_parser()
+    if '_mask' not in args.pass_masks:
+        args.pass_masks.append('_masks')
+        print(message('_mask is added to pass_masks', 'warning'))
+    print(message('add_object_to_scene is set to False and tot_frames to 200', 'warning'))
+    success = c.run(num=args.num, pass_masks=args.pass_masks, room=args.room, tot_frames=200,
+                    add_object_to_scene=False, trial_type=args.trial_type,
+                    png=args.png, save_frames=args.save_frames, save_mp4=args.save_mp4)
     print(success)

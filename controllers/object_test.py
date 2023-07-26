@@ -15,7 +15,7 @@ from tdw.librarian import SceneLibrarian
 import shutil
 import random   
 import os
-from helpers.helpers import images_to_video, message
+from helpers.helpers import message, create_arg_parser
 import time
 from tdw.librarian import ModelLibrarian
 
@@ -57,8 +57,7 @@ class Object_tester(Controller):
         self.add_ons.append(camera)
         return position, look_at
     
-    def run(self, num=5, trial_type='object', png=False, pass_masks=["_img", "_mask"], framerate = 30, room='random', 
-            tot_frames=200):
+    def run(self, num=5, png=False, pass_masks=["_img", "_mask"], framerate = 30, room='random'):
         '''
         param num: the number of trials
         param trial_type: you can choose if you would like to run an trial object, agent or transition based
@@ -178,18 +177,10 @@ class Object_tester(Controller):
     
     
 if __name__ == "__main__":
-    # print(message('This program is not save to run, because of try, except without error specification', 'warning'))
-    # user_input = ''
-    # while user_input.lower() not in ['y', 'n', 'no', 'yes']:
-    #     print(message('Would you like to continue anyways? (yes/no)', 'error'))
-    #     user_input = input()
-    # if user_input in ['y', 'yes']:
-    #     print(message('Unsave program will run', 'warning'))
-    #     c = Object_tester()
-    #     success = c.run(num=200, pass_masks=['_img'], room='empty', tot_frames=5, png=False)
-    #     print(success)
-    # print(message('Program aborted', 'success'))
-
     c = Object_tester()
-    success = c.run(num=200, pass_masks=['_img'], room='empty', tot_frames=5, png=False)
+    
+    # Retrieve the right arguments
+    args = create_arg_parser()
+    print(message('add_object_to_scene is set to False and tot_frames to 200', 'warning'))
+    success = c.run(num=args.num, pass_masks=args.pass_masks, room=args.room, framerate=args.framerate, png=args.png)
     print(success)

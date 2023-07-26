@@ -21,7 +21,7 @@ import random
 from helpers.objects import *
 from tdw.add_ons.third_person_camera import ThirdPersonCamera
 from random import uniform
-from helpers.helpers import get_magnitude, get_record_with_name
+from helpers.helpers import get_magnitude, get_record_with_name, create_arg_parser, message
 
 class UpWarmer(Runner):
     def __init__(self, port=1071):
@@ -114,5 +114,11 @@ class UpWarmer(Runner):
     
 if __name__ == "__main__":
     c = UpWarmer()
-    success = c.run(num=95, pass_masks=['_img', '_id'], room='empty', add_object_to_scene=False, tot_frames=150, png=False)
+
+    # Retrieve the right arguments
+    args = create_arg_parser()
+    print(message('The trial_type param is ignored', 'warning'))
+    success = c.run(num=args.num, pass_masks=args.pass_masks, room=args.room, tot_frames=args.tot_frames,
+                    add_object_to_scene=args.add_object_to_scene,
+                    png=args.png, save_frames=args.save_frames, save_mp4=args.save_mp4)
     print(success)
