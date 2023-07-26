@@ -1,6 +1,8 @@
 # STATUS: V1 - Experimential
 '''
 Readme:
+Example usage: python occlusion.py --pass_masks _img,_mask   
+
 The scales of the objects are random
 The rotation of the objects is random
 The height and distance of the camera is random for every trial

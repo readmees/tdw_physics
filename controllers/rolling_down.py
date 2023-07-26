@@ -1,6 +1,8 @@
 # STATUS: V3.1 - Object, Transition and Agent implemented 
 '''
 Readme:
+Example usage: python rolling_down.py --pass_masks _img,_mask   
+
 Objects move mostly in z and y position
 NOTE: stopping is not the same as in occlusion trial and could be perfected
 

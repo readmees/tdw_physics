@@ -1,6 +1,7 @@
 # STATUS: V1 - Experimential
 '''
 Readme:
+Example usage: python object_test.py --pass_masks _img,_mask
 The goal of this file is to test which objects create bugs and which objects are fine
 
 Possible improvements:

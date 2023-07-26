@@ -1,6 +1,8 @@
 # STATUS: V1 Experimental
 '''
 Readme:
+Example usage: python warming_up.py --pass_masks _img,_mask   
+
 This file is meant to apply something random, but object based, to each of the union of all the objects. 
 The goal is to provide a baseline for a neural network to 'warm up' the parameters.
 Different scenarios:

@@ -1,6 +1,8 @@
 # STATUS: V2 Passing OT
 '''
 Readme:
+Example usage: python containment.py --pass_masks _img,_mask   
+
 The core of of this code is taken from tdw_physics, from containment.py 
 tdw_physics uses custom/random physics, here we use the default
 Now the transition is a force, of course teleport could make sense as well

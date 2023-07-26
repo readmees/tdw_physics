@@ -1,6 +1,7 @@
 # STATUS: V2 - All the trial types are implemented, can be improved
 '''
 Readme:
+Example usage: python collision.py --pass_masks _img,_mask   
 
 Possible improvements:
 Add rolling down collision
@@ -288,7 +289,9 @@ if __name__ == "__main__":
 
     # Retrieve the right arguments
     args = create_arg_parser()
+    print('h')
     print(message('add_object_to_scene is set to False and tot_frames to 200', 'warning'))
+    print(args.pass_masks, type(args.pass_masks), '2')
     success = c.run(num=args.num, pass_masks=args.pass_masks, room=args.room, tot_frames=150,
                     add_object_to_scene=False, trial_type=args.trial_type,
                     png=args.png, save_frames=args.save_frames, save_mp4=args.save_mp4)

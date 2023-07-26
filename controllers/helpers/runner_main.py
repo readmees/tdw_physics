@@ -122,8 +122,14 @@ class Runner(Controller):
         cam_position, cam_look_at = self.set_camera()
         controller_name = self.controller_name
         
-        # Define path for output data frames
-        self.path_main = '../data/temp'
+        # Determine the base path for data storage
+        # depending on if the python script is called from "controllers" directory or not
+        current_directory = os.getcwd()
+        if current_directory.endswith("controllers"):
+            self.path_main  = '../data/temp'
+        else:
+            self.path_main  = 'data/temp'
+
         path_main = self.path_main
         paths = [f'{path_main}/{name}/{controller_name}/{trial_type}' for name in ['backgrounds', 'videos']]
         path_backgr, path_videos = paths
