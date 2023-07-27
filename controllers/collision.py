@@ -169,7 +169,8 @@ class Collision(Runner):
                                                         library='models_core.json',
                                                         object_id=self.o_ids[i],
                                                         position=self.positions[i],
-                                                        rotation=rotation if i == 1 else {"x": 0, "y": 0, "z": 0}
+                                                        rotation=rotation if i == 1 else {"x": 0, "y": 0, "z": 0},
+                                                        mass=1
                                                         ))
         return commands
 
@@ -245,7 +246,7 @@ class Collision(Runner):
         commands = self.add_objects(commands=[], rotation=rotation)
         if coll_type == 'force':
             # Get suitable magnitude
-            magnitude = get_magnitude(get_record_with_name(self.objects[1]))
+            magnitude = get_magnitude(get_record_with_name(self.objects[1]))/2
             magnitude = magnitude * 2 if self.objects[1] in EXTRA_FORCE else magnitude * .8
 
             print(self.objects[1], magnitude)
@@ -281,7 +282,12 @@ class Collision(Runner):
                        "frequency": "always"},
                       {"$type": "send_static_rigidbodies",
                        "frequency": "once"}])
-
+        # Request collisions data.
+        commands.append({"$type": "send_collisions",
+                        "enter": True, 
+                        "stay": False,
+                        "exit": False, 
+                        "collision_types": ["obj"]})
         return commands
     
 if __name__ == "__main__":

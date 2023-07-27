@@ -108,8 +108,8 @@ class Slope(Runner):
         # Ball doesn't have to roll too much
         position['y'] = random.uniform(1.4,1.5)
 
-        # Drop target slightly on right of slope max, so agent on the right will have to go uphil
-        position['x'] =  random.uniform(-.3,-.26)
+        # Drop target slightly on the left of slope max, so agent on the right will have to go uphil
+        position['x'] =  random.uniform(-.45,-.35)
         
 
 
