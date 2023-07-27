@@ -261,6 +261,10 @@ def create_arg_parser(process_pass_masks=True):
     parser.add_argument("--save_mp4", default=False, type=bool, help="Save frames as MP4")
     
     args = parser.parse_args()
+    if not '_img' in args.pass_masks:
+        print(message('Image should always be created, adding it to passmasks...', 'warning'))
+        args.pass_masks += ',_img'
     if process_pass_masks:
         args.pass_masks = args.pass_masks.split(",")
+
     return args

@@ -2,13 +2,18 @@
 '''
 Readme:
 Example usage: python collision.py --pass_masks _img,_mask   
+All the masses are fixed to a mass of 1
+Trial will start again depending on collision
 
 Possible improvements:
 Add rolling down collision
 Noise in position could be dependend on width of objects
 Random force positions could better
-Improve force magnitudes
 Make sure objects stop at wall
+Check if it's likely target is visible: 
+-ball category is in screen, 
+-albedo is empty where id is not (ball is not spotted on albedo)
+-assumed ball is completely in camera view
 '''
 # Added for collisions
 from helpers.runner_main import Runner
@@ -23,6 +28,7 @@ from copy import deepcopy
 from tdw.tdw_utils import TDWUtils
 from random import uniform
 import numpy as np
+from tdw.add_ons.collision_manager import CollisionManager
 
 class Collision(Runner):
 
@@ -45,6 +51,11 @@ class Collision(Runner):
         coll_pos, moving_pos = self.positions[:2]
         speed = [random.choice([-.1, 0, .1]), random.choice([-.1, 0, .1])]
 
+        # Add a collision manager
+        collision_manager = CollisionManager(enter=True, stay=False, exit=False, objects=True, environment=True)
+        self.add_ons.append(collision_manager)
+        collided = False
+
         # Settings for agent
         if trial_type == 'agent':
             speed = .06
@@ -63,8 +74,6 @@ class Collision(Runner):
             
 
         for i in range(tot_frames):
-            
-
             # Check if this is object based or transition trial
             if trial_type == 'transition':
                 transition_frames = []
@@ -123,12 +132,13 @@ class Collision(Runner):
                             last_height = np.inf 
 
                 resp = self.communicate(commands)
-                
-                
-
                  
             if trial_type == 'object':
                 self.communicate([])
+
+            # Check if the objects collided (at least once)
+            if collision_manager.obj_collisions:
+                collided = True
         
         # Reset the scene by destroying the objects
         destroy_commands = []
@@ -138,7 +148,23 @@ class Collision(Runner):
         destroy_commands.append({"$type": "send_rigidbodies",
                             "frequency": "never"})
         self.communicate(destroy_commands)
-        return transition_frames if transition_frames != [] else -1, True
+
+        # Check if collision happened
+        if trial_type == 'object':
+            if not collided:
+                print(message(f'Objects did not collide even though this is required for object trial...', 'error'))
+            success = collided
+        
+        # Check if transition stopped collision
+        if trial_type == 'transition':
+            if collided:
+                print(message(f'Objects did collide even though the transition object should avoid...', 'error'))
+            success = not collided  
+
+        if trial_type == 'agent':
+            success = True #TODO fix
+
+        return transition_frames if transition_frames != [] else -1, success 
     
     def set_fall_postions(self):
         '''This method implements objects falling on top of each other, 
@@ -249,7 +275,6 @@ class Collision(Runner):
             magnitude = get_magnitude(get_record_with_name(self.objects[1]))/2
             magnitude = magnitude * 2 if self.objects[1] in EXTRA_FORCE else magnitude * .8
 
-            print(self.objects[1], magnitude)
             commands.extend([{"$type": "object_look_at",
                     "other_object_id": coll_id,
                     "id": move_id},
@@ -282,6 +307,7 @@ class Collision(Runner):
                        "frequency": "always"},
                       {"$type": "send_static_rigidbodies",
                        "frequency": "once"}])
+        
         # Request collisions data.
         commands.append({"$type": "send_collisions",
                         "enter": True, 
@@ -295,9 +321,7 @@ if __name__ == "__main__":
 
     # Retrieve the right arguments
     args = create_arg_parser()
-    print('h')
     print(message('add_object_to_scene is set to False and tot_frames to 200', 'warning'))
-    print(args.pass_masks, type(args.pass_masks), '2')
     success = c.run(num=args.num, pass_masks=args.pass_masks, room=args.room, tot_frames=150,
                     add_object_to_scene=False, trial_type=args.trial_type,
                     png=args.png, save_frames=args.save_frames, save_mp4=args.save_mp4)
