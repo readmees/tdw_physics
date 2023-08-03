@@ -17,7 +17,7 @@ import random
 
 from helpers.runner_main import Runner
 from helpers.objects import ROLLING_FLIPPED
-from helpers.helpers import get_magnitude, message, get_record_with_name, get_distance, create_arg_parser
+from helpers.helpers import *
 
 import shutil
 import os
@@ -111,23 +111,7 @@ class Slope(Runner):
         # Drop target slightly on the left of slope max, so agent on the right will have to go uphil
         position['x'] =  random.uniform(-.45,-.35)
         
-
-
-        # Set scale
-        scale = .2
-
-        # Add target
-        commands.extend(self.get_add_physics_object(model_name='sphere',
-                                                    library='models_flex.json',
-                                                    object_id=target_id,
-                                                    position=position,
-                                                    scale_factor={"x": scale, "y": scale, "z": scale},
-                                                    ))
-        # Make target red
-        commands.append({"$type": "set_color",
-                        "color": {"r": 1., "g": 0., "b": 0., "a": 1.},
-                        "id": target_id})
-        return commands
+        return add_target_commands(target_id, position, commands)
     
     def add_object_to_scene(self, commands = []):
         '''This method adds a slope for the rolling down trials, by adding a freezed cube object and a wall to bounce too

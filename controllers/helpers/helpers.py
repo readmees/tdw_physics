@@ -22,6 +22,10 @@ import os
 
 import argparse
 
+# For adding target object
+from .objects import TARGET_OBJECTS
+from tdw.controller import Controller
+
 class ObjectInfo:
     """
     Based on ObjectPosition from &tdw_physics
@@ -72,7 +76,8 @@ def images_to_video(image_folder, video_name, fps, pass_masks, png, save_frames,
         # Create mp4 file
         for mask_type in pass_masks:
             # Added for good order of frames
-            input_names = f'{image_folder}/{mask_type.replace("_", "")}_*'
+            # Count = 1 is necessary for double _ e.g. _depth_simple
+            input_names = f'{image_folder}/{mask_type.replace("_", "", 1)}_*'
             file_ex = '.jpg' if not png and mask_type == '_img' else '.png'
             input_names += file_ex
 
@@ -245,6 +250,26 @@ def get_distance(resp, o_id1, o_id2):
     point2 = {axis:value for axis, value in zip(['x', 'y', 'z'], get_transforms(resp, o_id2)[1])}
     return TDWUtils.get_distance(point1, point2) 
 
+
+def add_target_commands(target_id, agent_pos, commands=[]):
+        # Choose target
+        target = random.choice(TARGET_OBJECTS)
+        scale = 1 if target != 'sphere' else .2
+
+        # Add target
+        commands.extend(Controller.get_add_physics_object(model_name=target,
+                                                    library='models_core.json' if target != 'sphere' else 'models_flex.json',
+                                                    object_id=target_id,
+                                                    position=agent_pos,
+                                                    scale_factor={"x": scale, "y": scale, "z": scale},
+                                                    ))
+        # Make target red if target is sphere
+        if target == 'sphere':
+            commands.append({"$type": "set_color",
+                            "color": {"r": 1., "g": 0., "b": 0., "a": 1.},
+                            "id": target_id})
+        return commands
+            
 def create_arg_parser(process_pass_masks=True):
     '''param process_pass_masks: if process_pass_masks is True the input string will be transformed into a list'''
     parser = argparse.ArgumentParser(description="Please select the parameters to create trials")

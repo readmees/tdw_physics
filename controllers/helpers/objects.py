@@ -187,15 +187,6 @@ ROLLING_FLIPPED = [
     # '93.b04_bottle_max' #TWO bottles
 ]
 
-BALLS = [
-    '12.699264_shoppingcart_2013',
-    '23.apple',
-    '72.b03_roller_skate',
-    '73.b03_shopping_cart',
-    '74.b03_shopping_cart_walmart',
-    '75.b03_shoppingcart_2013'
-]
-
 FAULTY = [
     '128.b04_wallmounted_soap_dispenser_composite'
 ]
@@ -251,11 +242,6 @@ ROLLING_FLIPPED_DICT = {
     for item in ROLLING_FLIPPED
 }
 
-BALLS_DICT = {
-    item.split('.')[1]: int(item.split('.')[0])
-    for item in BALLS
-}
-
 FAULTY_DICT = {
     item.split('.')[1]: int(item.split('.')[0])
     for item in FAULTY
@@ -268,8 +254,11 @@ OCCLUDERS = [item.split('.')[1] for item in OCCLUDERS]
 OCCLUDERS_SEE_THROUGH = [item.split('.')[1] for item in OCCLUDERS_SEE_THROUGH] 
 OCCLUDED = [item.split('.')[1] for item in OCCLUDED] 
 ROLLING_FLIPPED = [item.split('.')[1] for item in ROLLING_FLIPPED] 
-BALLS = [item.split('.')[1] for item in BALLS] 
 FAULTY = [item.split('.')[1] for item in FAULTY] 
 
 # Objects to add to scene
 SCENE_OBJECTS = ["bowl", "cone", "cube", "cylinder", "dumbbell", "octahedron", "pentagon", "pipe", "platonic", "pyramid", "sphere", "torus", "triangular_prism"]
+
+# Target object for agent
+TARGET_OBJECTS = ["apple",
+                    "orange", "sphere"]

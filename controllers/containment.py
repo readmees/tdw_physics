@@ -21,7 +21,7 @@ import random
 
 from helpers.runner_main import Runner
 from helpers.objects import CONTAINERS, CONTAINED
-from helpers.helpers import get_two_random_records, get_transforms, message, get_magnitude, get_record_with_name, get_distance, create_arg_parser
+from helpers.helpers import *
 
 import numpy as np
 
@@ -168,25 +168,12 @@ class Containment(Runner):
         x = self.o_x + random.uniform(1,.5) if random.choice([True, False]) else self.o_x - random.uniform(1,.5)
         z = self.o_z + random.uniform(1,.5) if random.choice([True, False]) else self.o_z - random.uniform(1,.5)
 
-        position={"x": x,
-                "y": random.uniform(0, 0.3),
-                "z": z}
+        agent_pos = {"x": x,
+                     "y": random.uniform(0, 0.3),
+                     "z": z}
 
-        # Set scale
-        scale = .2
+        return add_target_commands(target_id, agent_pos, commands)
 
-        # Add target
-        commands.extend(self.get_add_physics_object(model_name='sphere',
-                                                    library='models_flex.json',
-                                                    object_id=target_id,
-                                                    position=position,
-                                                    scale_factor={"x": scale, "y": scale, "z": scale},
-                                                    ))
-        # Make target red
-        commands.append({"$type": "set_color",
-                        "color": {"r": 1., "g": 0., "b": 0., "a": 1.},
-                        "id": target_id})
-        return commands
 
     def add_object_to_scene(self, commands):
         '''This method will add a fixed object to the scene that the container has something to balance/shake on,

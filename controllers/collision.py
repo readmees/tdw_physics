@@ -23,12 +23,16 @@ from tdw.output_data import Transforms, OutputData
 import random 
 from helpers.objects import *
 from tdw.add_ons.third_person_camera import ThirdPersonCamera
-from helpers.helpers import get_magnitude, get_record_with_name, get_distance, get_transforms, create_arg_parser, message
+from helpers.helpers import *
 from copy import deepcopy
 from tdw.tdw_utils import TDWUtils
 from random import uniform
 import numpy as np
 from tdw.add_ons.collision_manager import CollisionManager
+
+from PIL import Image
+import os
+import numpy as np
 
 class Collision(Runner):
 
@@ -99,6 +103,7 @@ class Collision(Runner):
                 moving_pos = {axis:value for axis, value in zip(['x', 'y', 'z'], self.get_ob_pos(self.o_ids[1], resp))}
             
             if trial_type == 'agent':
+                success = True #TODO maybe remove
                 commands = []
                 if i == 0:
                     commands.extend([{"$type": "object_look_at", "other_object_id": self.o_ids[-1], "id": self.o_ids[1]},
@@ -159,10 +164,9 @@ class Collision(Runner):
         if trial_type == 'transition':
             if collided:
                 print(message(f'Objects did collide even though the transition object should avoid...', 'error'))
+            if not transition_compl:
+                print(message(f'Transition didn\'t happend for this trial', 'warning'))
             success = not collided  
-
-        if trial_type == 'agent':
-            success = True #TODO fix
 
         return transition_frames if transition_frames != [] else -1, success 
     
@@ -190,7 +194,9 @@ class Collision(Runner):
         return [coll_pos, moving_pos]
 
     def add_objects(self, commands, rotation):
+        # If it's an agent trial one object should be the target so it'll be added seperately with self.add_target
         for i in range(self.num_objects if self.trial_type != 'agent' else self.num_objects - 1):
+            print(i)
             commands.extend(self.get_add_physics_object(model_name=self.objects[i],
                                                         library='models_core.json',
                                                         object_id=self.o_ids[i],
@@ -219,22 +225,8 @@ class Collision(Runner):
         agent_pos = deepcopy(self.positions[1])
         agent_pos['z'] = -agent_pos['z']
         agent_pos['x'] = -agent_pos['x']
-
-        # Set scale
-        scale = .2
-
-        # Add target
-        commands.extend(self.get_add_physics_object(model_name='sphere',
-                                                    library='models_flex.json',
-                                                    object_id=target_id,
-                                                    position=agent_pos,
-                                                    scale_factor={"x": scale, "y": scale, "z": scale},
-                                                    ))
-        # Make target red
-        commands.append({"$type": "set_color",
-                        "color": {"r": 1., "g": 0., "b": 0., "a": 1.},
-                        "id": target_id})
-        return commands
+       
+        return add_target_commands(target_id, agent_pos, commands)
 
     def set_camera(self):
         ''' The avatar_id of the camera should be 'frames_temp'
@@ -249,7 +241,7 @@ class Collision(Runner):
         
     def trial_initialization_commands(self):
         # Could be extended to multiple objects one day
-        self.num_objects = 2 if self.trial_type != 'agent' else 3
+        self.num_objects = 2 if self.trial_type != 'agent' else 3 #random.randint(3,4)
 
         # Always store object ids so the main runner knows which to remove
         self.o_ids = [self.get_unique_id() for _ in range(self.num_objects)] 
@@ -322,6 +314,9 @@ if __name__ == "__main__":
     # Retrieve the right arguments
     args = create_arg_parser()
     print(message('add_object_to_scene is set to False and tot_frames to 200', 'warning'))
+    if '_category' not in args.pass_masks:
+        args.pass_masks.append('_category')
+        print(message('_category is added to pass_masks', 'warning'))
     success = c.run(num=args.num, pass_masks=args.pass_masks, room=args.room, tot_frames=150,
                     add_object_to_scene=False, trial_type=args.trial_type,
                     png=args.png, save_frames=args.save_frames, save_mp4=args.save_mp4)

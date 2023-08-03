@@ -29,7 +29,7 @@ from typing import Dict
 import random
 from helpers.runner_main import Runner
 from helpers.objects import *
-from helpers.helpers import message, get_two_random_records, get_magnitude, get_record_with_name, get_distance, create_arg_parser
+from helpers.helpers import *
 
 # To keep track of where the moving objects is
 from tdw.output_data import Transforms, OutputData
@@ -217,21 +217,8 @@ class Occlusion(Runner):
         position['z'] = position['z'] + bounds[2]/2 + off if self.direction == 'left' else position['z'] - bounds[2]/2 - off
         position['x'] += random.uniform(-1, 1)
 
-        # Set scale
-        scale = .2
-
-        # Add target
-        commands.extend(self.get_add_physics_object(model_name='sphere',
-                                                    library='models_flex.json',
-                                                    object_id=target_id,
-                                                    position=position,
-                                                    scale_factor={"x": scale, "y": scale, "z": scale},
-                                                    ))
-        # Make target red
-        commands.append({"$type": "set_color",
-                        "color": {"r": 1., "g": 0., "b": 0., "a": 1.},
-                        "id": target_id})
-        return commands
+        return add_target_commands(target_id, position, commands)
+        
 
     def trial_initialization_commands(self):
         '''
