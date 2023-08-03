@@ -6,6 +6,7 @@ All the masses are fixed to a mass of 1
 Trial will start again depending on collision
 
 Possible improvements:
+There will be more fall collisions, since force collisions fail more often
 Add rolling down collision
 Noise in position could be dependend on width of objects
 Random force positions could better
@@ -47,13 +48,12 @@ class Collision(Runner):
         super().__init__(port=port)
 
     def run_per_frame_commands(self, trial_type, tot_frames):
-        transition_frames = None
+        speed = [random.choice([-.1, 0, .1]), random.choice([-.1, 0, .1])]
 
         # Check if transition is done
         transition_compl = False  
+        transition_frames = None if trial_type != 'transition' else []
 
-        coll_pos, moving_pos = self.positions[:2]
-        speed = [random.choice([-.1, 0, .1]), random.choice([-.1, 0, .1])]
 
         # Add a collision manager
         collision_manager = CollisionManager(enter=True, stay=False, exit=False, objects=True, environment=True)
@@ -75,15 +75,15 @@ class Collision(Runner):
             last_height = 0
 
             force = get_magnitude(get_record_with_name(self.objects[1]))
-            
+        if trial_type == 'transition':
+            tot_bounds = np.max(TDWUtils.get_bounds_extents(get_record_with_name(self.objects[0]).bounds))/2 
+            tot_bounds += np.max(TDWUtils.get_bounds_extents(get_record_with_name(self.objects[1]).bounds))/2 
 
         for i in range(tot_frames):
             # Check if this is object based or transition trial
             if trial_type == 'transition':
-                transition_frames = []
                 # Start transition when the objects are close #NOTE size is not considered
-                if TDWUtils.get_distance(coll_pos, moving_pos) < random.uniform(0.8,1):
-                    transition_compl = True
+                
                 if transition_compl:
                     # Start moving the collider
                     resp = self.communicate([{"$type": "teleport_object_by", 
@@ -98,9 +98,8 @@ class Collision(Runner):
                 else:
                     # Store response and make frame
                     resp = self.communicate([])
-
-                # Update position of moving object
-                moving_pos = {axis:value for axis, value in zip(['x', 'y', 'z'], self.get_ob_pos(self.o_ids[1], resp))}
+                    if (get_distance(resp, self.o_ids[0], self.o_ids[1]) - tot_bounds) < random.uniform(.5,.6):
+                        transition_compl = True
             
             if trial_type == 'agent':
                 success = True #TODO maybe remove
@@ -196,7 +195,6 @@ class Collision(Runner):
     def add_objects(self, commands, rotation):
         # If it's an agent trial one object should be the target so it'll be added seperately with self.add_target
         for i in range(self.num_objects if self.trial_type != 'agent' else self.num_objects - 1):
-            print(i)
             commands.extend(self.get_add_physics_object(model_name=self.objects[i],
                                                         library='models_core.json',
                                                         object_id=self.o_ids[i],
@@ -250,9 +248,12 @@ class Collision(Runner):
         # Choose between falling or force collisions
         coll_type = random.choice(['fall', 'force']) if self.trial_type != 'agent' else 'agent'
 
-        # Get positions based on collision type
+        # Get positions based on collision type 
         self.positions = self.set_force_positions() if coll_type != 'fall' else self.set_fall_postions()
 
+        #TODO let it work with more positions, idea: move random on left en right from the collidion position
+        
+        
         # To choose random object without putting back
         random.shuffle(self.objects)
 
@@ -265,7 +266,7 @@ class Collision(Runner):
         if coll_type == 'force':
             # Get suitable magnitude
             magnitude = get_magnitude(get_record_with_name(self.objects[1]))/2
-            magnitude = magnitude * 2 if self.objects[1] in EXTRA_FORCE else magnitude * .8
+            magnitude = magnitude * 2.5 if self.objects[1] in EXTRA_FORCE else magnitude * .6
 
             commands.extend([{"$type": "object_look_at",
                     "other_object_id": coll_id,
