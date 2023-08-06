@@ -208,7 +208,7 @@ class Runner(Controller):
         except FileNotFoundError:
             df = pd.DataFrame(index=None, columns=('trial_id', 'trial_num', 'path_videos', 'path_frames', 'num', 'trial_type', 'objects_name',
                                                    'png', 'pass_masks', 'framerate', 'room', 'tot_frames', 'add_object_to_scene', 
-                                                   'save_frames', 'save_mp4', 'transition_start_frames', 'cam_position', 'cam_look_at'))
+                                                   'save_frames', 'save_mp4', 'transition_or_agent_frames', 'cam_position', 'cam_look_at'))
 
         print(f"Video of trial n will be saved at {path_videos}/{trial_type}/{trial_id}_trial_n.mp4")
         trial_num = 0
