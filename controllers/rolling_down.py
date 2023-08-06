@@ -39,7 +39,7 @@ class Slope(Runner):
         param trial_type: you can choose if you would like to run an trial object, agent or transition based
         param tot_frames: the total amount of frames per trial
         '''
-        transition_frames = None if trial_type != 'transition' else []
+        transition_frames = None if trial_type == 'object' else []
         transition_activated = False
         moving_o_id, wall_id = self.o_ids[0], self.scene_o_ids[1]
         print(self.object_choice)
@@ -69,12 +69,14 @@ class Slope(Runner):
                         resp = self.communicate([{"$type": "object_look_at", "other_object_id": self.o_ids[1], "id": self.o_ids[0]},
                                                 {"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[0], "absolute": False}])
                         first_resp = True
+                        transition_frames.append(i)
                     elif get_distance(resp, self.o_ids[0], self.o_ids[1]) <.1 or agent_success:
                         resp = self.communicate([])
                         agent_success = True
                     else:
                         resp = self.communicate([{"$type": "object_look_at", "other_object_id": self.o_ids[1], "id": self.o_ids[0]},
                                                 {"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[0], "absolute": False}])
+                        transition_frames.append(i)
                 else:
                     resp = self.communicate([])
             except TypeError:
@@ -82,6 +84,7 @@ class Slope(Runner):
                 resp = self.communicate([])
                 # Sometimes we get TypeError: 'NoneType' object is not iterable, when trying to get the transforms
                 trial_success = False
+                break
 
         destroy_commands = []
         for o_id in self.o_ids:
@@ -207,6 +210,8 @@ class Slope(Runner):
         if self.trial_type == 'agent':
             # Put target on top instead
             commands = self.add_target(commands)
+            self.names['target'] = self.target_rec.name
+
 
             # Put agent random position
             position = {"x": random.uniform(2.5, 3), "y": random.uniform(0, .5), "z": random.uniform(-.15,.15)}

@@ -66,7 +66,7 @@ class Occlusion(Runner):
 
         # Check if transition is done
         transition_compl = False             
-        transition_start_frame = None
+        transition_frames = None if trial_type == 'object' else []
         
         # Calculate z distance between occluder and camera
         stop_moving = np.abs(self.o_occl_loc_z - self.camera_pos['z'])
@@ -82,7 +82,6 @@ class Occlusion(Runner):
         for i in range(tot_frames):
             # Check if this is object based or transition trial
             if trial_type == 'transition':
-                transition_start_frame = []
                 # Start transition when it's behind the object #TODO: adjust for line of camera
                 if self.o_moving_loc['z'] > stop_moving and self.direction == 'left' or self.o_moving_loc['z'] < stop_moving and self.direction == 'right':
                     commands = []
@@ -98,7 +97,7 @@ class Occlusion(Runner):
                         commands.extend([{"$type": "set_rigidbody_constraints", "id": self.o_ids[0], "freeze_position_axes": {"x": 0, "y": 0, "z": 0}, "freeze_rotation_axes": {"x": 0, "y": 0, "z": 0}}])
 
                     # Start 'manual' movement
-                    transition_start_frame.append(i)
+                    transition_frames.append(i)
                     commands.extend([{"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[0], "absolute": True}])
                     self.communicate(commands)
                 else:
@@ -117,13 +116,16 @@ class Occlusion(Runner):
                 if i == 0:
                     resp = self.communicate([{"$type": "object_look_at", "other_object_id": self.o_ids[2], "id": self.o_ids[0]},
                                              {"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[0], "absolute": False}])
+                    transition_frames.append(i)
                 elif (get_distance(resp, self.o_ids[0], self.o_ids[2])- bounds) <.05 or agent_success:
                     print('success')
                     resp = self.communicate([])
                     agent_success = True
                 else:
-                   resp = self.communicate([{"$type": "object_look_at", "other_object_id": self.o_ids[2], "id": self.o_ids[0]},
+                    resp = self.communicate([{"$type": "object_look_at", "other_object_id": self.o_ids[2], "id": self.o_ids[0]},
                                              {"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[0], "absolute": False}])
+                    transition_frames.append(i)
+                   
                 print(get_distance(resp, self.o_ids[0], self.o_ids[2]))
 
             if i == 0:
@@ -150,8 +152,7 @@ class Occlusion(Runner):
         destroy_commands.append({"$type": "send_rigidbodies",
                             "frequency": "never"})
         self.communicate(destroy_commands)
-
-        return transition_start_frame if transition_start_frame != [] else -1, trial_success
+        return transition_frames if transition_frames != [] else -1, True
       
     def add_occ_objects(self):
         '''This method adds two objects to the scene, one moving and one occluder'''
@@ -245,6 +246,8 @@ class Occlusion(Runner):
         # Add agent if needed
         if self.trial_type == 'agent':
             commands = self.add_target(commands, bounds[0])
+            self.names['target'] = self.target_rec.name
+
 
         # Teleport camera same perpendicular x distance to z axis from occluder as moving object
         #TODO check if moving camera creates problems

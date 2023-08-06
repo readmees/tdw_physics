@@ -39,7 +39,7 @@ class Containment(Runner):
         super().__init__(port=port)
     
     def run_per_frame_commands(self, trial_type, tot_frames):
-        transition_start_frame = None
+        transition_frames = None if trial_type == 'object' else []
 
         # Agent speed
         speed, up_speed = .06, .06
@@ -50,75 +50,75 @@ class Containment(Runner):
         bounds = bounds_agent + bounds_target
 
         if trial_type == 'transition':
-            transition_start_frame = []
-
             rotations, positions = [], []
 
             # Define the amount of patience the program has before a transition is enabled
             patience = random.randint(20, 40)
 
-            commands = []
             transitions_avoided = 0
             for i in range(tot_frames):
-                print(i)
-                resp = self.communicate(commands)
-                commands = []
-                o_rotation_deg, container_position, _ = get_transforms(resp, self.o_ids[0])
-                rotations.append(o_rotation_deg)
-                positions.append(container_position)
+                if i == 0:
+                    resp = self.communicate([])
+                else:
+                    commands = []
+                    o_rotation_deg, container_position, _ = get_transforms(resp, self.o_ids[0])
+                    rotations.append(o_rotation_deg)
+                    positions.append(container_position)
 
-                # Only look back at the last x frames and only consider transition after x frames
-                if len(rotations) == patience:
-                    # See if the container stopped mostly shaking the last x frames
-                    rotation_sleep = np.array([np.std(np.array(rotations)[:,i]) < .3 for i in range(3)]).all()
-                    positions_sleep = np.array([np.std(np.array(positions)[:,i]) < .3 for i in range(3)]).all()
-                    
-                    if rotation_sleep and positions_sleep:
-                        # Get position of transtions object
-                        o_position = get_transforms(resp, self.o_ids[1])[1]
-              
-                        # Check how far away the object is from the center of the container
-                        o_relative_position = np.abs(np.array(container_position) - np.array(o_position))
+                    # Only look back at the last x frames and only consider transition after x frames
+                    if len(rotations) == patience:
+                        # See if the container stopped mostly shaking the last x frames
+                        rotation_sleep = np.array([np.std(np.array(rotations)[:,i]) < .3 for i in range(3)]).all()
+                        positions_sleep = np.array([np.std(np.array(positions)[:,i]) < .3 for i in range(3)]).all()
+                        
+                        if rotation_sleep and positions_sleep:
+                            # Get position of transtions object
+                            o_position = get_transforms(resp, self.o_ids[1])[1]
+                
+                            # Check how far away the object is from the center of the container
+                            o_relative_position = np.abs(np.array(container_position) - np.array(o_position))
 
-                        # Get roughly the maximum discance the object may be from the center
-                        # Moreover, for x and z this is to the border of the container,
-                        # for y, this is halfway the container
-                        max_distance = np.abs(np.array([bound for bound in self.bounds[1]]))
+                            # Get roughly the maximum discance the object may be from the center
+                            # Moreover, for x and z this is to the border of the container,
+                            # for y, this is halfway the container
+                            max_distance = np.abs(np.array([bound for bound in self.bounds[1]]))
 
-                        # Activate transition only if the object is inside container #NOTE this is not perfect
-                        activate_transition = (o_relative_position<max_distance).all()
+                            # Activate transition only if the object is inside container #NOTE this is not perfect
+                            activate_transition = (o_relative_position<max_distance).all()
 
-                        if activate_transition:
-                            transition_start_frame.append(i)
-                            print('transition!!!')
-                            # commands.append({"$type": "object_look_at_position",
-                            #                 "position":  {"x": random.uniform(-10, 10), 
-                            #                               "y": random.uniform(0, o_position[1]), 
-                            #                               "z": random.uniform(-10, 10)},
-                            #                 "id": self.o_ids[1]})
+                            if activate_transition:
+                                #The transition should happen at this frame
+                                transition_frames.append(i+1)
 
-                            # Get suitable random force
-                            force = get_magnitude(self.o_record)*.25
+                                # commands.append({"$type": "object_look_at_position",
+                                #                 "position":  {"x": random.uniform(-10, 10), 
+                                #                               "y": random.uniform(0, o_position[1]), 
+                                #                               "z": random.uniform(-10, 10)},
+                                #                 "id": self.o_ids[1]})
 
-                            # Apply a force to the object
-                            commands.append({"$type": "apply_force_at_position", 
-                                             "id": self.o_ids[1], 
-                                             "force": {"x":force, "y": 0, "z": force}, 
-                                             "position": {"x": random.uniform(-10, 10), 
-                                                        "y": 0, 
-                                                        "z": random.uniform(-10, 10)}})
+                                # Get suitable random force
+                                force = get_magnitude(self.o_record)*.25
 
-                            # Reset patience before next transition starts
-                            rotations, positions = [], []
-                            patience = random.randint(20, 40)
-                            transitions_avoided = 0
-                        else:
-                            transitions_avoided += 1 
-                            if transitions_avoided > 10:
-                                break
+                                # Apply a force to the object
+                                commands.append({"$type": "apply_force_at_position", 
+                                                "id": self.o_ids[1], 
+                                                "force": {"x":force, "y": 0, "z": force}, 
+                                                "position": {"x": random.uniform(-10, 10), 
+                                                            "y": 0, 
+                                                            "z": random.uniform(-10, 10)}})
 
-                    # Make room for the next frame
-                    rotations, positions = rotations[1:], positions[1:]
+                                # Reset patience before next transition starts
+                                rotations, positions = [], []
+                                patience = random.randint(20, 40)
+                                transitions_avoided = 0
+                            else:
+                                transitions_avoided += 1 
+                                if transitions_avoided > 10:
+                                    break
+
+                        # Make room for the next frame
+                        rotations, positions = rotations[1:], positions[1:]
+                    resp = self.communicate(commands)
         
         # Let the trial settle for a couple of frames
         settle_frames = random.randint(20, 40)
@@ -147,6 +147,9 @@ class Containment(Runner):
                 else:
                     resp = self.communicate(commands)
 
+                    # Append frame-numbers where the agent is 'walking'
+                    transition_frames.append(i)
+
             
                             
         # Reset the scene by destroying the objects
@@ -157,7 +160,7 @@ class Containment(Runner):
         destroy_commands.append({"$type": "send_rigidbodies",
                             "frequency": "never"})
         self.communicate(destroy_commands)
-        return transition_start_frame if transition_start_frame != [] else -1, True
+        return transition_frames if transition_frames != [] else -1, True
 
 
     def add_target(self, commands):
@@ -263,6 +266,7 @@ class Containment(Runner):
 
         if self.trial_type == 'agent':
             commands = self.add_target(commands)
+            self.names['target'] = self.target_rec.name
             
         commands.extend([{"$type": "send_rigidbodies",
                                   "frequency": "always"},

@@ -38,7 +38,6 @@ class UpWarmer(Runner):
         # Remove duplicates, while preserving order
         # See https://stackoverflow.com/questions/480214/how-do-i-remove-duplicates-from-a-list-while-preserving-order
         self.objects = list(dict.fromkeys(self.objects))
-        print(self.objects)
         self.camera_pos = {"x": uniform(1.5, 2), "y": uniform(1.5, 2), "z": uniform(-1, 1)}
 
         super().__init__(port=port)
@@ -84,7 +83,6 @@ class UpWarmer(Runner):
     def trial_initialization_commands(self):
         # Choose between falling or force collision #TODO check if random choice still works
         coll_type = random.choice([['fall'], ['force'], ['fall', 'force']])
-        print(coll_type)
         # Always store object ids so the main runner knows which to remove
         self.o_ids = [self.get_unique_id()]
         commands = []

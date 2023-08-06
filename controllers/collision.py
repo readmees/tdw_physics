@@ -245,10 +245,15 @@ class Collision(Runner):
         
         #NOTE occluding object is perfectly in the middle?
         target_pos = deepcopy(self.positions[-1])
-        random_distance = random.uniform(-.5, .5)
-        target_pos['z'] = -target_pos['z']+random_distance
-        target_pos['x'] = -target_pos['x']+random_distance
-       
+        target_pos['z'] = -target_pos['z']
+        target_pos['x'] = -target_pos['x']
+
+        #Bring target closer to middle point (to increase chance to be seen by camera)
+        random_offset = random.uniform(.3, .5)
+        target_pos['z'] += random_offset if target_pos['z'] < 0 else -random_offset
+        target_pos['x'] += random_offset if target_pos['x'] < 0 else -random_offset
+
+        # Bring slightly closer to the middle so target is often in sight
         commands, self.target_rec = add_target_commands(target_id, target_pos, commands)
         return commands
 
@@ -265,7 +270,7 @@ class Collision(Runner):
         
     def trial_initialization_commands(self):
         # Could be extended to multiple objects one day
-        self.num_objects = 2 if self.trial_type != 'agent' else random.randint(4,4)
+        self.num_objects = 2 if self.trial_type != 'agent' else random.randint(3,4)
 
         # Always store object ids so the main runner knows which to remove
         self.o_ids = [self.get_unique_id() for _ in range(self.num_objects)] 
@@ -322,10 +327,12 @@ class Collision(Runner):
         if coll_type == 'agent':
              #NOTE occluding object is perfectly in the middle?
             commands = self.add_target(commands)
+            self.names = {'agent': self.objects[self.num_objects-2], 
+                          'target': self.target_rec.name,
+                          'obstacles': self.objects[:2]} 
 
-        # self.names is put in the csv files, so the developers know which object(s) are chosen
-        self.names = {'object1':self.objects[0], 'object2':self.objects[1]} #TODO update for agent
-
+        else:
+            self.names = {'object1':self.objects[0], 'object2':self.objects[1]}
 
         # Send transforms in order to keep track of locations
         commands.extend([{"$type": "send_transforms",
