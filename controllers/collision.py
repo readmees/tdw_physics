@@ -244,12 +244,12 @@ class Collision(Runner):
         target_id = self.o_ids[-1]
         
         #NOTE occluding object is perfectly in the middle?
-        agent_pos = deepcopy(self.positions[-1])
+        target_pos = deepcopy(self.positions[-1])
         random_distance = random.uniform(-.5, .5)
-        agent_pos['z'] = -agent_pos['z']+random_distance
-        agent_pos['x'] = -agent_pos['x']+random_distance
+        target_pos['z'] = -target_pos['z']+random_distance
+        target_pos['x'] = -target_pos['x']+random_distance
        
-        commands, self.target_rec = add_target_commands(target_id, agent_pos, commands)
+        commands, self.target_rec = add_target_commands(target_id, target_pos, commands)
         return commands
 
     def set_camera(self):

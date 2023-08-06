@@ -45,8 +45,9 @@ class Containment(Runner):
         speed, up_speed = .06, .06
         agent_success = False
 
-        bounds = np.max(TDWUtils.get_bounds_extents(self.o_record .bounds))/2 
-        bounds += np.max(TDWUtils.get_bounds_extents(get_record_with_name('sphere', json='models_flex.json').bounds))*.2/2 
+        bounds_agent = np.max(TDWUtils.get_bounds_extents(self.o_record.bounds))/2 
+        bounds_target = np.max(TDWUtils.get_bounds_extents(self.target_rec.bounds))*.2/2 
+        bounds = bounds_agent + bounds_target
 
         if trial_type == 'transition':
             transition_start_frame = []
@@ -164,7 +165,7 @@ class Containment(Runner):
         target_id = self.o_ids[2]
 
         # Put target on same position as agent 
-        # But moved in the z position, so it is in front
+        # But moved in the z position, so it is in front #NOTE agent_pos might be target_pos
         x = self.o_x + random.uniform(1,.5) if random.choice([True, False]) else self.o_x - random.uniform(1,.5)
         z = self.o_z + random.uniform(1,.5) if random.choice([True, False]) else self.o_z - random.uniform(1,.5)
 
@@ -172,7 +173,8 @@ class Containment(Runner):
                      "y": random.uniform(0, 0.3),
                      "z": z}
 
-        return add_target_commands(target_id, agent_pos, commands)
+        commands, self.target_rec = add_target_commands(target_id, agent_pos, commands)
+        return commands
 
 
     def add_object_to_scene(self, commands):

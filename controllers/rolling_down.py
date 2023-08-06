@@ -111,7 +111,8 @@ class Slope(Runner):
         # Drop target slightly on the left of slope max, so agent on the right will have to go uphil
         position['x'] =  random.uniform(-.45,-.35)
         
-        return add_target_commands(target_id, position, commands)
+        commands, self.target_rec = add_target_commands(target_id, position, commands)
+        return commands
     
     def add_object_to_scene(self, commands = []):
         '''This method adds a slope for the rolling down trials, by adding a freezed cube object and a wall to bounce too

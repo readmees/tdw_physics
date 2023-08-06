@@ -58,8 +58,10 @@ class Occlusion(Runner):
 
         # Settings for agent
         speed = .04
-        bounds = np.max(TDWUtils.get_bounds_extents(get_record_with_name(self.all_names[0]).bounds))/2 
-        bounds += np.max(TDWUtils.get_bounds_extents(get_record_with_name('sphere', json='models_flex.json').bounds))*.2/2 
+        bounds_agent = np.max(TDWUtils.get_bounds_extents(self.all_names[0].bounds))/2 
+        bounds_target = np.max(TDWUtils.get_bounds_extents(self.target_rec.bounds))*.2/2 
+        bounds = bounds_agent + bounds_target
+
         agent_success = False
 
         # Check if transition is done
@@ -217,7 +219,8 @@ class Occlusion(Runner):
         position['z'] = position['z'] + bounds[2]/2 + off if self.direction == 'left' else position['z'] - bounds[2]/2 - off
         position['x'] += random.uniform(-1, 1)
 
-        return add_target_commands(target_id, position, commands)
+        commands, self.target_rec = add_target_commands(target_id, position, commands)
+        return commands
         
 
     def trial_initialization_commands(self):
