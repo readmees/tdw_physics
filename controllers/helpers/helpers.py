@@ -252,23 +252,28 @@ def get_distance(resp, o_id1, o_id2):
 
 
 def add_target_commands(target_id, agent_pos, commands=[]):
+        '''A target with mass is 1 is added'''
         # Choose target
         target = random.choice(TARGET_OBJECTS)
         scale = 1 if target != 'sphere' else .2
+        library = 'models_core.json' if target != 'sphere' else 'models_flex.json'
 
         # Add target
         commands.extend(Controller.get_add_physics_object(model_name=target,
-                                                    library='models_core.json' if target != 'sphere' else 'models_flex.json',
+                                                    library=library,
                                                     object_id=target_id,
                                                     position=agent_pos,
                                                     scale_factor={"x": scale, "y": scale, "z": scale},
+                                                    mass=1
                                                     ))
         # Make target red if target is sphere
         if target == 'sphere':
             commands.append({"$type": "set_color",
                             "color": {"r": 1., "g": 0., "b": 0., "a": 1.},
                             "id": target_id})
-        return commands
+            
+        target_rec = get_record_with_name(target, json=library)
+        return commands, target_rec
             
 def create_arg_parser(process_pass_masks=True):
     '''param process_pass_masks: if process_pass_masks is True the input string will be transformed into a list'''

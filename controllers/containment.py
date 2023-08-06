@@ -222,6 +222,7 @@ class Containment(Runner):
 
     def trial_initialization_commands(self):
         commands = []
+        
         # Select a random container and contained object
         records, self.bounds = get_two_random_records(smaller_list=CONTAINED, larger_list=CONTAINERS)
         

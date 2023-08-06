@@ -79,21 +79,22 @@ class Collision(Runner):
 
             force = get_magnitude(get_record_with_name(self.objects[1]))
 
-            last_height, height = [], []            
             agent_success = False
 
             # Might need to keep count of two agent jumps
             bounds_obstacle, height_obstacle, jump_activated = [], [], []
 
+            hor_distance, last_hor_distance = [], []
             for i in range(self.num_objects-2):
                 # Get max bound of x and y
                 bounds_obstacle.append(np.max(TDWUtils.get_bounds_extents(get_record_with_name(self.objects[i]).bounds))/2 )
                 
                 # Get height
                 height_obstacle.append(TDWUtils.get_bounds_extents(get_record_with_name(self.objects[i]).bounds)[1])
-                last_height.append(0)
-                height.append(np.nan)
                 jump_activated.append(False)
+
+                hor_distance.append(np.nan)
+                last_hor_distance.append(np.nan)
 
         if trial_type == 'transition':
             tot_bounds = np.max(TDWUtils.get_bounds_extents(get_record_with_name(self.objects[0]).bounds))/2 
@@ -143,19 +144,18 @@ class Collision(Runner):
                     for j in range(self.num_objects-2):
                         #NOTE: the following formula might not make sense, aims to calculate the right 'fly' height
                         if (get_distance(resp, self.o_ids[j], self.o_ids[-2]) - (bounds_obstacle[j]+bounds_agent)) < (height_obstacle[j]/speed+speed*3):
-                            height[j] = get_transforms(resp, self.o_ids[-2])[1][1]
+                            # Get xy distance for agent and obstacle j disregarding the height; the horizontal distance
+                            pos_ag = {val:key for val,key in zip(['x', 'y', 'z'], get_transforms(resp, self.o_ids[-2])[1])}
+                            pos_ob = {val:key for val,key in zip(['x', 'y', 'z'], get_transforms(resp, self.o_ids[j])[1])}
+                            print(pos_ag, pos_ob)
+                            pos_ag['y'], pos_ob['y'] = 0, 0
+                            hor_distance[j] = TDWUtils.get_distance(pos_ag, pos_ob)
 
-
-                            # Go up if flight is not already descending #NOTE: might be shocky
-                            if height[j] > last_height[j]:
+                            # Only go up if the obstacle is comming closer
+                            if hor_distance[j] < last_hor_distance[j]:
                                 commands.append({"$type": "teleport_object_by", "position": {"x": 0, "y": speed*2, "z": 0}, "id": self.o_ids[-2], "absolute": True})
-                                if not jump_activated[j]:
-                                    jump_activated[j] = True
-                                last_height[j] = height[j]
-                            else:
-                                commands.append({"$type": "teleport_object_by", "position": {"x": 0, "y": -speed*2, "z": 0}, "id": self.o_ids[-2], "absolute": True})
-                                # Will only fly up once 
-                                last_height[j] = np.inf 
+
+                            last_hor_distance[j] = hor_distance[j]
                     
                 if 'teleport_object_by' in commands:
                     transition_frames.append(i)
