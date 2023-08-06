@@ -42,7 +42,6 @@ class Slope(Runner):
         transition_frames = None if trial_type == 'object' else []
         transition_activated = False
         moving_o_id, wall_id = self.o_ids[0], self.scene_o_ids[1]
-        print(self.object_choice)
 
         # Agent speed
         speed = .06
@@ -58,7 +57,6 @@ class Slope(Runner):
                 if i >= 1 and trial_type == 'transition':
                     # self.o_ids[0] is agent, self.scene_o_ids[1]was
                     if get_distance(resp, moving_o_id, wall_id) < .25 and not transition_activated:
-                        print('transition')
                         resp = self.communicate([{"$type": "add_constant_force", "id": self.o_ids[0], "force": {"x": -force, "y": 0, "z": 0}, "relative_force": {"x": 0, "y": 0, "z": 0}, "torque": {"x": 0, "y": 0, "z": 0}, "relative_torque": {"x": 0, "y": 0, "z": 0}}])
                         transition_activated = True
                         transition_frames.append(i)

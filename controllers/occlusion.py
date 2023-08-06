@@ -58,11 +58,12 @@ class Occlusion(Runner):
 
         # Settings for agent
         speed = .04
-        bounds_agent = np.max(TDWUtils.get_bounds_extents(self.all_names[0].bounds))/2 
-        bounds_target = np.max(TDWUtils.get_bounds_extents(self.target_rec.bounds))*.2/2 
-        bounds = bounds_agent + bounds_target
+        if trial_type == 'agent':
+            bounds_agent = np.max(TDWUtils.get_bounds_extents(get_record_with_name(self.all_names[0]).bounds))/2 
+            bounds_target = np.max(TDWUtils.get_bounds_extents(self.target_rec.bounds))*.2/2 
+            bounds = bounds_agent + bounds_target
 
-        agent_success = False
+            agent_success = False
 
         # Check if transition is done
         transition_compl = False             
@@ -118,15 +119,12 @@ class Occlusion(Runner):
                                              {"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[0], "absolute": False}])
                     transition_frames.append(i)
                 elif (get_distance(resp, self.o_ids[0], self.o_ids[2])- bounds) <.05 or agent_success:
-                    print('success')
                     resp = self.communicate([])
                     agent_success = True
                 else:
                     resp = self.communicate([{"$type": "object_look_at", "other_object_id": self.o_ids[2], "id": self.o_ids[0]},
                                              {"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[0], "absolute": False}])
                     transition_frames.append(i)
-                   
-                print(get_distance(resp, self.o_ids[0], self.o_ids[2]))
 
             if i == 0:
                 # Check if occluder is occluding one side of the screen as well
@@ -152,7 +150,7 @@ class Occlusion(Runner):
         destroy_commands.append({"$type": "send_rigidbodies",
                             "frequency": "never"})
         self.communicate(destroy_commands)
-        return transition_frames if transition_frames != [] else -1, True
+        return transition_frames if transition_frames != [] else -1, trial_success
       
     def add_occ_objects(self):
         '''This method adds two objects to the scene, one moving and one occluder'''

@@ -67,10 +67,6 @@ class Collision(Runner):
         # Settings for agent
         if trial_type == 'agent':
             speed = .06
-
-            print('target:', self.target_rec.name)
-            print('agent:', self.objects[self.num_objects-2])
-
             
             #NOTE might be better to exclude height or take rotation into account
             bounds_agent = np.max(TDWUtils.get_bounds_extents(get_record_with_name(self.objects[self.num_objects-2]).bounds))/2 
@@ -147,7 +143,6 @@ class Collision(Runner):
                             # Get xy distance for agent and obstacle j disregarding the height; the horizontal distance
                             pos_ag = {val:key for val,key in zip(['x', 'y', 'z'], get_transforms(resp, self.o_ids[-2])[1])}
                             pos_ob = {val:key for val,key in zip(['x', 'y', 'z'], get_transforms(resp, self.o_ids[j])[1])}
-                            print(pos_ag, pos_ob)
                             pos_ag['y'], pos_ob['y'] = 0, 0
                             hor_distance[j] = TDWUtils.get_distance(pos_ag, pos_ob)
 
@@ -188,7 +183,7 @@ class Collision(Runner):
             if collided:
                 print(message(f'Objects did collide even though the transition object should avoid...', 'error'))
             if not transition_compl:
-                print(message(f'Transition didn\'t happend for this trial', 'warning'))
+                print(message(f'Transition didn\'t happen for this trial', 'warning'))
             success = not collided  
 
         return transition_frames if transition_frames != [] else -1, success 

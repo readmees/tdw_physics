@@ -1,5 +1,4 @@
 data/*
-data_publish/*
 TDW.app
 __pycache__/*
 controllers/__pycache__/*

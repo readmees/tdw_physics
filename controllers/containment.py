@@ -44,10 +44,11 @@ class Containment(Runner):
         # Agent speed
         speed, up_speed = .06, .06
         agent_success = False
-
-        bounds_agent = np.max(TDWUtils.get_bounds_extents(self.o_record.bounds))/2 
-        bounds_target = np.max(TDWUtils.get_bounds_extents(self.target_rec.bounds))*.2/2 
-        bounds = bounds_agent + bounds_target
+        
+        if trial_type == 'agent':
+            bounds_agent = np.max(TDWUtils.get_bounds_extents(self.o_record.bounds))/2 
+            bounds_target = np.max(TDWUtils.get_bounds_extents(self.target_rec.bounds))*.2/2 
+            bounds = bounds_agent + bounds_target
 
         if trial_type == 'transition':
             rotations, positions = [], []
@@ -160,6 +161,7 @@ class Containment(Runner):
         destroy_commands.append({"$type": "send_rigidbodies",
                             "frequency": "never"})
         self.communicate(destroy_commands)
+
         return transition_frames if transition_frames != [] else -1, True
 
 
