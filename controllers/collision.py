@@ -4,6 +4,8 @@ Readme:
 Example usage: python collision.py --pass_masks _img,_mask   
 All the masses are fixed to a mass of 1
 Trial will start again depending on collision
+The frame numbers (starting at 0) for transition and agent are saved, 
+it is a list with all the frames where the object had agency
 
 Possible improvements:
 There will be more fall collisions, since force collisions fail more often
@@ -52,7 +54,9 @@ class Collision(Runner):
 
         # Check if transition is done
         transition_compl = False  
-        transition_frames = None if trial_type != 'transition' else []
+
+        # The framenumbers where a transition happens or agent is acting agentlike
+        transition_frames = None if trial_type == 'object' else []
 
 
         # Add a collision manager
@@ -63,18 +67,34 @@ class Collision(Runner):
         # Settings for agent
         if trial_type == 'agent':
             speed = .06
+
+            print('target:', self.target_rec.name)
+            print('agent:', self.objects[self.num_objects-2])
+
             
             #NOTE might be better to exclude height or take rotation into account
-            bounds_obstacle = np.max(TDWUtils.get_bounds_extents(get_record_with_name(self.objects[0]).bounds))/2 
-            height_obstacle = TDWUtils.get_bounds_extents(get_record_with_name(self.objects[0]).bounds)[1]
-            bounds_agent = np.max(TDWUtils.get_bounds_extents(get_record_with_name(self.objects[1]).bounds))/2 
-            bounds_target = np.max(TDWUtils.get_bounds_extents(get_record_with_name('sphere', json='models_flex.json').bounds))*.2/2 
+            bounds_agent = np.max(TDWUtils.get_bounds_extents(get_record_with_name(self.objects[self.num_objects-2]).bounds))/2 
+            bounds_target = np.max(TDWUtils.get_bounds_extents(self.target_rec.bounds))*.2/2 
             bounds = bounds_agent + bounds_target
-            agent_success = False
-
-            last_height = 0
 
             force = get_magnitude(get_record_with_name(self.objects[1]))
+
+            last_height, height = [], []            
+            agent_success = False
+
+            # Might need to keep count of two agent jumps
+            bounds_obstacle, height_obstacle, jump_activated = [], [], []
+
+            for i in range(self.num_objects-2):
+                # Get max bound of x and y
+                bounds_obstacle.append(np.max(TDWUtils.get_bounds_extents(get_record_with_name(self.objects[i]).bounds))/2 )
+                
+                # Get height
+                height_obstacle.append(TDWUtils.get_bounds_extents(get_record_with_name(self.objects[i]).bounds)[1])
+                last_height.append(0)
+                height.append(np.nan)
+                jump_activated.append(False)
+
         if trial_type == 'transition':
             tot_bounds = np.max(TDWUtils.get_bounds_extents(get_record_with_name(self.objects[0]).bounds))/2 
             tot_bounds += np.max(TDWUtils.get_bounds_extents(get_record_with_name(self.objects[1]).bounds))/2 
@@ -105,36 +125,40 @@ class Collision(Runner):
                 success = True #TODO maybe remove
                 commands = []
                 if i == 0:
-                    commands.extend([{"$type": "object_look_at", "other_object_id": self.o_ids[-1], "id": self.o_ids[1]},
-                                             {"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[1], "absolute": False}])
-                elif (get_distance(resp, self.o_ids[1], self.o_ids[-1]) - bounds) <.4 or agent_success:
-                    print('Succes')
+                    commands.extend([{"$type": "object_look_at", "other_object_id": self.o_ids[-1], "id": self.o_ids[-2]},
+                                             {"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[-2], "absolute": False}])
+                elif (get_distance(resp, self.o_ids[-2], self.o_ids[-1]) - bounds) <.4 or agent_success:
                     if not agent_success:
                         # Target almost reached, apply force in its direction to enable collision
-                        commands.extend([{"$type": "object_look_at", "other_object_id": self.o_ids[-1], "id": self.o_ids[1]},
+                        commands.extend([{"$type": "object_look_at", "other_object_id": self.o_ids[-1], "id": self.o_ids[-2]},
                                             {"$type": "apply_force_magnitude_to_object",
                                             "magnitude": force,
-                                            "id": self.o_ids[1]}])
+                                            "id": self.o_ids[-2]}])
                         agent_success = True
                     
                 else:
-                    commands.extend([{"$type": "object_look_at", "other_object_id": self.o_ids[-1], "id": self.o_ids[1]},
-                                             {"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[1], "absolute": False}])
+                    commands.extend([{"$type": "object_look_at", "other_object_id": self.o_ids[-1], "id": self.o_ids[-2]},
+                                             {"$type": "teleport_object_by", "position": {"x": 0, "y": 0, "z": speed}, "id": self.o_ids[-2], "absolute": False}])
                     
-                    #NOTE: the following formula might not make sense, aims to calculate the right 'fly' height
-                    if (get_distance(resp, self.o_ids[0], self.o_ids[1]) - (bounds_obstacle+bounds_agent)) < (height_obstacle/speed+speed*3):
-                        height = get_transforms(resp, self.o_ids[1])[1][1]
+                    for j in range(self.num_objects-2):
+                        #NOTE: the following formula might not make sense, aims to calculate the right 'fly' height
+                        if (get_distance(resp, self.o_ids[j], self.o_ids[-2]) - (bounds_obstacle[j]+bounds_agent)) < (height_obstacle[j]/speed+speed*3):
+                            height[j] = get_transforms(resp, self.o_ids[-2])[1][1]
 
-                        # Go up if flight is not already descending #NOTE: might be shocky
-                        if height > last_height:
-                            commands.append({"$type": "teleport_object_by", "position": {"x": 0, "y": speed*2, "z": 0}, "id": self.o_ids[1], "absolute": True})
-                            print('fly succes')
-                            last_height = height
-                        else:
-                            print('fly avoid')
-                            # Will only fly up once 
-                            last_height = np.inf 
 
+                            # Go up if flight is not already descending #NOTE: might be shocky
+                            if height[j] > last_height[j]:
+                                commands.append({"$type": "teleport_object_by", "position": {"x": 0, "y": speed*2, "z": 0}, "id": self.o_ids[-2], "absolute": True})
+                                if not jump_activated[j]:
+                                    jump_activated[j] = True
+                                last_height[j] = height[j]
+                            else:
+                                commands.append({"$type": "teleport_object_by", "position": {"x": 0, "y": -speed*2, "z": 0}, "id": self.o_ids[-2], "absolute": True})
+                                # Will only fly up once 
+                                last_height[j] = np.inf 
+                    
+                if 'teleport_object_by' in commands:
+                    transition_frames.append(i)
                 resp = self.communicate(commands)
                  
             if trial_type == 'object':
@@ -183,8 +207,8 @@ class Collision(Runner):
     
     def set_force_positions(self):
         # Add postions for moving object
-        x = random.choice([random.uniform(-2.2, -.8), random.uniform(.8, 2.2)])
-        z = random.choice([random.uniform(-2.2, -.8), random.uniform(.8, 2.2)])
+        x = random.choice([random.uniform(-2.2, -1.5), random.uniform(1.5, 2.2)])
+        z = random.choice([random.uniform(-2.2, -1.5), random.uniform(1.5, 2.2)])
         moving_pos = {"x": x, "y": 0, "z": z}
         
         # Add position of the object that will be in the way of the moving object
@@ -220,26 +244,28 @@ class Collision(Runner):
         target_id = self.o_ids[-1]
         
         #NOTE occluding object is perfectly in the middle?
-        agent_pos = deepcopy(self.positions[1])
-        agent_pos['z'] = -agent_pos['z']
-        agent_pos['x'] = -agent_pos['x']
+        agent_pos = deepcopy(self.positions[-1])
+        random_distance = random.uniform(-.5, .5)
+        agent_pos['z'] = -agent_pos['z']+random_distance
+        agent_pos['x'] = -agent_pos['x']+random_distance
        
-        return add_target_commands(target_id, agent_pos, commands)
+        commands, self.target_rec = add_target_commands(target_id, agent_pos, commands)
+        return commands
 
     def set_camera(self):
         ''' The avatar_id of the camera should be 'frames_temp'
         '''
         # Add camera
-        position, look_at = {"x": -1, "y": 1.5, "z": -3}, {"x": 0, "y": 0, "z": 0}
+        position, look_at = {"x": -3.2, "y": 3, "z": -3.2}, {"x": 0, "y": 0, "z": 0}
         self.camera = ThirdPersonCamera(position=position,
-                           look_at=look_at,
-                           avatar_id='frames_temp')
+                                        look_at=look_at,
+                                        avatar_id='frames_temp')
         self.add_ons.append(self.camera)
         return position, look_at
         
     def trial_initialization_commands(self):
         # Could be extended to multiple objects one day
-        self.num_objects = 2 if self.trial_type != 'agent' else 3 #random.randint(3,4)
+        self.num_objects = 2 if self.trial_type != 'agent' else random.randint(4,4)
 
         # Always store object ids so the main runner knows which to remove
         self.o_ids = [self.get_unique_id() for _ in range(self.num_objects)] 
@@ -248,11 +274,29 @@ class Collision(Runner):
         # Choose between falling or force collisions
         coll_type = random.choice(['fall', 'force']) if self.trial_type != 'agent' else 'agent'
 
-        # Get positions based on collision type 
+        # Get positions based on collision type
         self.positions = self.set_force_positions() if coll_type != 'fall' else self.set_fall_postions()
 
-        #TODO let it work with more positions, idea: move random on left en right from the collidion position
-        
+        # Get point non-moving object or more or less middle point from the two non-moving non-target objects
+        cam_turn = deepcopy(self.positions[0])
+
+        # Turn camera up/down, if objects falls down
+        cam_turn['y'] = 0 # self.positions[1]['y']/10 if coll_type == 'fall' else 1.5
+
+        # Point camera towards non-moving object and up/down
+        #TODO 'zoom in' depending on height of object
+        self.camera.look_at(cam_turn)
+
+        # Add extra obstacle if needed, idea: move random on left en right from the colliding position
+        # self.positions becomes [obstacle_pos, obstacle_pos, moving_pos]
+        if self.num_objects == 4:
+            # New self.positions becomes 
+            self.positions.insert(0, self.positions[0])
+
+            # Choosing only one offset per pos ensures they are in the same angle 
+            div1, div2 = random.uniform(1.5, 3), random.uniform(1.5, 3)
+            self.positions[0] = {key:val/div1 for key,val in self.positions[-1].items()}
+            self.positions[1] = {key:-val/div2 for key,val in self.positions[-1].items()}
         
         # To choose random object without putting back
         random.shuffle(self.objects)
@@ -282,16 +326,6 @@ class Collision(Runner):
         # self.names is put in the csv files, so the developers know which object(s) are chosen
         self.names = {'object1':self.objects[0], 'object2':self.objects[1]} #TODO update for agent
 
-
-        # Get point non-moving object
-        cam_turn = deepcopy(self.positions[0])
-
-        # Turn camera up/down, if objects falls down
-        cam_turn['y'] = 0 # self.positions[1]['y']/10 if coll_type == 'fall' else 1.5
-
-        # Point camera towards non-moving object and up/down
-        #TODO 'zoom in' depending on height of object
-        self.camera.look_at(cam_turn)
 
         # Send transforms in order to keep track of locations
         commands.extend([{"$type": "send_transforms",
