@@ -43,6 +43,7 @@ python multiple_runner.py --num 15 --pass_masks _img,_mask,_id,_depth_simple,_ca
 ### Notes and debugging
 You can also run each controller separately.
 To fix the error ```zmq.error.ZMQError: Address already in use (addr='tcp://*:1071')``` at step 4, you can run ```pkill python``` and run step 4 again.
+The results will be saves in ./data/temp/, the videos can be opened best with VLC.
 
 ### Parameters
 There are many parameters; you can run ```python multiple_runner.py --help``` or ```python multiple_runner.py -h``` for help.
