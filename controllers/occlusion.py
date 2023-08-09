@@ -150,7 +150,9 @@ class Occlusion(Runner):
         destroy_commands.append({"$type": "send_rigidbodies",
                             "frequency": "never"})
         self.communicate(destroy_commands)
-        return transition_frames if transition_frames != [] else -1, trial_success
+        if not trial_success:
+            return 'Fail', trial_success
+        return transition_frames if transition_frames != [] else -1, True
       
     def add_occ_objects(self):
         '''This method adds two objects to the scene, one moving and one occluder'''

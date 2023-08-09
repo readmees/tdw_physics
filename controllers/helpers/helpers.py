@@ -264,7 +264,9 @@ def add_target_commands(target_id, agent_pos, commands=[]):
                                                     object_id=target_id,
                                                     position=agent_pos,
                                                     scale_factor={"x": scale, "y": scale, "z": scale},
-                                                    mass=1
+                                                    default_physics_values=False,
+                                                    mass=1,
+                                                    scale_mass=False,
                                                     ))
         # Make target red if target is sphere
         if target == 'sphere':

@@ -126,9 +126,9 @@ class Runner(Controller):
         # depending on if the python script is called from "controllers" directory or not
         current_directory = os.getcwd()
         if current_directory.endswith("controllers"):
-            self.path_main  = '../data/temp'
+            self.path_main  = '../data/batch2'
         else:
-            self.path_main  = 'data/temp'
+            self.path_main  = 'data/batch2'
 
         path_main = self.path_main
         paths = [f'{path_main}/{name}/{controller_name}/{trial_type}' for name in ['backgrounds', 'videos']]

@@ -219,7 +219,9 @@ class Collision(Runner):
                                                         object_id=self.o_ids[i],
                                                         position=self.positions[i],
                                                         rotation=rotation if i == 1 else {"x": 0, "y": 0, "z": 0},
-                                                        mass=1
+                                                        default_physics_values=False,
+                                                        mass=1,
+                                                        scale_mass=False,
                                                         ))
         return commands
 
@@ -309,8 +311,7 @@ class Collision(Runner):
         commands = self.add_objects(commands=[], rotation=rotation)
         if coll_type == 'force':
             # Get suitable magnitude
-            magnitude = get_magnitude(get_record_with_name(self.objects[1]))/2
-            magnitude = magnitude * 2.5 if self.objects[1] in EXTRA_FORCE else magnitude * .6
+            magnitude = random.uniform(20,40)
 
             commands.extend([{"$type": "object_look_at",
                     "other_object_id": coll_id,
